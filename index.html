@@ -92,13 +92,13 @@
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center">
         <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-        <p class="mt-4 text-slate-400 font-mono text-xs uppercase tracking-widest">Connecting to the System...</p>
+        <p class="mt-4 text-slate-400 font-mono text-xs uppercase tracking-widest">Connecting to Data Stream...</p>
     </div>
 
     <!-- Authentication Section -->
     <div id="authSection" class="auth-container hidden">
-        <div class="glass p-8 w-full max-w-md mx-4">
-            <div class="text-center mb-8">
+        <div class="glass p-8 w-full max-w-md mx-4 text-center">
+            <div class="mb-8">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
                     <i class="fas fa-droplet text-blue-400 text-2xl"></i>
                 </div>
@@ -106,7 +106,7 @@
                 <p class="text-slate-400 text-sm">Operator credentials required</p>
             </div>
             
-            <form id="loginForm" class="space-y-4">
+            <form id="loginForm" class="space-y-4 text-left">
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-300 font-mono text-[10px] uppercase tracking-wider">Identity UID</label>
                     <input type="email" id="loginEmail" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm" placeholder="operator@system.io" required>
@@ -127,10 +127,10 @@
 
             <button id="googleBtn" class="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-3 text-xs uppercase tracking-widest">
                 <i class="fab fa-google text-lg"></i>
-                Google Sign In
+                Google SSO
             </button>
 
-            <div id="loginError" class="mt-4 text-red-400 text-xs font-mono text-center hidden">ERROR: INVALID CREDENTIALS</div>
+            <div id="loginError" class="mt-4 text-red-400 text-[10px] font-mono text-center hidden leading-relaxed"></div>
         </div>
     </div>
 
@@ -165,7 +165,7 @@
                     <div class="p-2 bg-blue-500/10 rounded-lg">
                         <i class="fas fa-gauge-high text-blue-400"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest">System Pressure</span>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest">Pressure</span>
                 </div>
                 <div class="text-4xl font-mono font-bold mb-1" id="pressureVal">-- <span class="text-lg">PSI</span></div>
                 <div class="mt-4 gauge-bar">
@@ -208,10 +208,10 @@
             </div>
         </div>
 
-        <div class="glass overflow-hidden">
+        <div class="glass overflow-hidden mb-4">
             <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-[0.2em]">Telemetry Event Logs</h3>
-                <div class="text-[10px] font-mono text-blue-400 uppercase" id="logCounter"> Packets Cached</div>
+                <div class="text-[10px] font-mono text-blue-400 uppercase" id="logCounter">0 Packets Cached</div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -225,11 +225,17 @@
                     </thead>
                     <tbody class="divide-y divide-white/5 font-mono text-xs" id="logTableBody">
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-slate-600 animate-pulse uppercase tracking-[0.3em]">Scouring database for broadcasts...</td>
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-600 animate-pulse uppercase tracking-[0.3em]">Connecting to telemetry node...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Debugging Info -->
+        <div id="debugConsole" class="bg-black/40 p-3 rounded-lg border border-white/10 font-mono text-[9px] text-slate-500 flex justify-between items-center">
+            <span>DATABASE_PATH: <span id="pathIndicator" class="text-blue-400">Initializing...</span></span>
+            <span id="connectionStatus" class="text-emerald-500">OFFLINE</span>
         </div>
     </div>
 
@@ -248,27 +254,27 @@
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         // ==========================================
-        // 1. DATABASE CONFIGURATION (Southeast Asia)
+        // 1. FIREBASE CONFIGURATION (Southeast Asia)
         // ==========================================
         const firebaseConfig = {
-              apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+             apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
             storageBucket: "project-water-b2dad.firebasestorage.app",
             messagingSenderId: "2593146798",
             appId: "1:2593146798:web:e964319324a7599fa56a3f"
-
-        };
+             };
 
         // ==========================================
         // 2. DATA PATH CONFIGURATION
-        // ==========================================
-        const CUSTOM_DATA_PATH = "telemetry"; 
+        // If your data is at the root, use "/". 
+        // If it is in a folder called "telemetry", use "telemetry".
+        const CUSTOM_DATA_PATH = "water_system"; 
         // ==========================================
 
-        const finalConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'water-management-v4';
+        const isEnvMode = typeof __firebase_config !== 'undefined';
+        const finalConfig = isEnvMode ? JSON.parse(__firebase_config) : firebaseConfig;
         
         const app = initializeApp(finalConfig);
         const auth = getAuth(app);
@@ -284,6 +290,8 @@
             loginForm: document.getElementById('loginForm'),
             googleBtn: document.getElementById('googleBtn'),
             loginError: document.getElementById('loginError'),
+            pathIndicator: document.getElementById('pathIndicator'),
+            connStatus: document.getElementById('connectionStatus'),
             metrics: {
                 turns: document.getElementById('valveTurns'),
                 pressure: document.getElementById('pressureVal'),
@@ -297,15 +305,17 @@
             timeLabel: document.getElementById('currentTime')
         };
 
+        // Rule 3: Ensure Auth is established
         const initSession = async () => {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                if (isEnvMode && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    // Start an anonymous session so the database can be read
+                    await signInAnonymously(auth);
                 }
-                // We do NOT call signInAnonymously automatically anymore because
-                // we want the user to actively choose a sign-in method (Email or Google).
             } catch (e) {
-                console.error("Auth initialization failure:", e);
+                console.error("Auth Failure:", e);
             }
         };
 
@@ -326,7 +336,7 @@
             setTimeout(() => UI.loading.classList.add('hidden'), 500);
         });
 
-        // Email/Password Login
+        // Email Login
         UI.loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             UI.loginError.classList.add('hidden');
@@ -335,18 +345,22 @@
             try { 
                 await signInWithEmailAndPassword(auth, email, pass); 
             } catch (err) { 
+                UI.loginError.innerText = "ACCESS DENIED: INVALID CREDENTIALS";
                 UI.loginError.classList.remove('hidden'); 
             }
         });
 
-        // Google SSO Login
+        // Google SSO
         UI.googleBtn.addEventListener('click', async () => {
             UI.loginError.classList.add('hidden');
             try {
                 await signInWithPopup(auth, googleProvider);
             } catch (err) {
-                console.error("Google Auth Failed:", err);
-                UI.loginError.innerText = "GOOGLE AUTH FAILED: " + err.message;
+                if (err.code === 'auth/unauthorized-domain') {
+                    UI.loginError.innerHTML = `DOMAIN ERROR: Add 'scf.usercontent.goog' to Authorized Domains`;
+                } else {
+                    UI.loginError.innerText = "GOOGLE ERROR: " + err.code;
+                }
                 UI.loginError.classList.remove('hidden');
             }
         });
@@ -358,36 +372,51 @@
 
             setInterval(() => { UI.timeLabel.innerText = new Date().toLocaleTimeString(); }, 1000);
 
-            const sanitizedAppId = appId.replace(/\./g, '_');
-            const telemetryPath = typeof __app_id !== 'undefined' 
-                ? `artifacts/${sanitizedAppId}/public/data/${CUSTOM_DATA_PATH}` 
-                : CUSTOM_DATA_PATH;
+            // RESOLVE PATH:
+            // If the user has put their own config, we use their path directly.
+            // Only use the 'artifacts/...' prefix if in simulated environment mode.
+            let telemetryPath = CUSTOM_DATA_PATH;
+            if (isEnvMode && typeof __app_id !== 'undefined') {
+                const sanitizedAppId = __app_id.replace(/\./g, '_');
+                telemetryPath = `artifacts/${sanitizedAppId}/public/data/${CUSTOM_DATA_PATH}`;
+            }
             
+            UI.pathIndicator.innerText = telemetryPath;
             const telemetryRef = ref(db, telemetryPath);
 
             onValue(telemetryRef, (snapshot) => {
+                UI.connStatus.innerText = "CONNECTED";
+                UI.connStatus.className = "text-emerald-500";
+                
                 const data = snapshot.val();
                 if (!data) {
-                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 animate-pulse uppercase tracking-[0.2em] text-[10px]">No data found at: [${telemetryPath}]</td></tr>`;
+                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 animate-pulse uppercase tracking-[0.2em] text-[10px]">No records found at path: [${telemetryPath}]</td></tr>`;
                     return;
                 }
 
-                const rawData = Object.keys(data).map(key => {
-                    const item = data[key];
-                    return {
-                        id: key,
-                        pressure: Number(item.pressure) || 0,
-                        valveTurns: Number(item.valveTurns) || 0,
-                        timestamp: item.timestamp ? new Date(item.timestamp) : new Date()
-                    };
-                });
+                // Transform Object/Array into a list
+                const rawData = [];
+                if (Array.isArray(data)) {
+                    data.forEach((item, index) => { if (item) rawData.push({ id: index, ...item }); });
+                } else {
+                    Object.keys(data).forEach(key => { rawData.push({ id: key, ...data[key] }); });
+                }
 
-                const sortedData = rawData.sort((a, b) => b.timestamp - a.timestamp);
+                // Map fields (adjust keys here if your JSON uses different names)
+                const processedData = rawData.map(item => ({
+                    id: item.id,
+                    pressure: Number(item.pressure) || 0,
+                    valveTurns: Number(item.valveTurns) || 0,
+                    timestamp: item.timestamp ? new Date(item.timestamp) : new Date()
+                }));
+
+                const sortedData = processedData.sort((a, b) => b.timestamp - a.timestamp);
                 updateDisplay(sortedData);
             }, (error) => { 
-                console.error("Database Link Interrupted:", error); 
+                UI.connStatus.innerText = "ERROR";
+                UI.connStatus.className = "text-rose-500";
                 if (error.code === 'PERMISSION_DENIED') {
-                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-500 font-mono text-[10px] uppercase tracking-widest">Access Denied: Check rules for [${telemetryPath}]</td></tr>`;
+                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-500 font-mono text-[10px] uppercase tracking-widest">Permission Denied: Check Rules for [${telemetryPath}]</td></tr>`;
                 }
             });
         }
@@ -410,7 +439,7 @@
                     <td class="px-6 py-4 text-slate-500">${data.length - index}</td>
                     <td class="px-6 py-4 text-blue-400 font-bold">${log.pressure.toFixed(2)}</td>
                     <td class="px-6 py-4 text-amber-500 font-bold">${log.valveTurns}</td>
-                    <td class="px-6 py-4 text-right text-slate-400 text-[10px]">${log.timestamp.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-right text-slate-400 text-[10px] font-mono">${log.timestamp.toLocaleString()}</td>
                 </tr>
             `).join('');
 
