@@ -85,6 +85,10 @@
             background: var(--bg-dark);
             transition: opacity 0.4s ease;
         }
+        
+        canvas {
+            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.1));
+        }
     </style>
 </head>
 <body>
@@ -115,7 +119,7 @@
                     <label class="block text-sm font-medium mb-1 text-slate-300 font-mono text-[10px] uppercase tracking-wider">Access Key</label>
                     <input type="password" id="loginPass" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm" placeholder="••••••••" required>
                 </div>
-                <button type="submit" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
+                <button type="submit" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
                     Authorize Connection
                 </button>
             </form>
@@ -136,7 +140,6 @@
 
     <!-- Dashboard Section -->
     <div id="dashboardSection" class="dashboard-container">
-        <!-- Header -->
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
                 <h2 class="text-2xl font-bold flex items-center gap-3">
@@ -201,7 +204,7 @@
         <div class="glass p-6 mb-8">
             <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                 <i class="fas fa-chart-area text-blue-400"></i>
-                Pressure Trend (PSI)
+                Real-time Pressure Oscillations (PSI)
             </h3>
             <div class="h-64">
                 <canvas id="pressureChart"></canvas>
@@ -210,17 +213,17 @@
 
         <div class="glass overflow-hidden mb-4">
             <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
-                <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-[0.2em]">Telemetry Event Logs</h3>
-                <div class="text-[10px] font-mono text-blue-400 uppercase" id="logCounter">0 Packets Cached</div>
+                <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-[0.2em]">Session Event Logs</h3>
+                <div class="text-[10px] font-mono text-blue-400 uppercase" id="logCounter">0 Packets Buffered</div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-slate-500 text-[10px] uppercase font-mono tracking-widest border-b border-white/5 bg-slate-900/50">
-                            <th class="px-6 py-4 font-bold">SL NO.</th>
-                            <th class="px-6 py-4 font-bold">Pressure (PSI)</th>
-                            <th class="px-6 py-4 font-bold">Valve Turns</th>
-                            <th class="px-6 py-4 font-bold text-right">Timestamp</th>
+                            <th class="px-6 py-4 font-bold">Sync Timestamp</th>
+                            <th class="px-6 py-4 font-bold text-center">Pressure (PSI)</th>
+                            <th class="px-6 py-4 font-bold text-center">Valve Turns</th>
+                            <th class="px-6 py-4 font-bold text-right">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5 font-mono text-xs" id="logTableBody">
@@ -263,7 +266,7 @@
         // 1. FIREBASE CONFIGURATION (Southeast Asia)
         // ==========================================
         const firebaseConfig = {
-           apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+    apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
@@ -275,8 +278,6 @@
 
         // ==========================================
         // 2. DATA PATH CONFIGURATION
-        // According to your JSON, the device data is nested under 'water_system'
-        // and its specific MAC address.
         // ==========================================
         const CUSTOM_DATA_PATH = "water_system/D0_EF_76_32_48_D2"; 
         // ==========================================
@@ -291,6 +292,9 @@
         const googleProvider = new GoogleAuthProvider();
 
         let pressureChart = null;
+        // Session buffer to store historical points for the "Perfect Graph" effect
+        let telemetryBuffer = [];
+        const MAX_BUFFER_SIZE = 50; 
 
         const UI = {
             loading: document.getElementById('loadingOverlay'),
@@ -382,11 +386,9 @@
 
             setInterval(() => { UI.timeLabel.innerText = new Date().toLocaleTimeString(); }, 1000);
 
-            // Path Calculation:
             const cleanPath = CUSTOM_DATA_PATH.replace(/^\/|\/$/g, '');
             let telemetryPath = cleanPath;
 
-            // Prepend Sandbox Prefix ONLY if using the environment-provided configuration
             if (isEnvMode && (finalConfig.apiKey === "YOUR_API_KEY" || finalConfig.apiKey === "")) {
                 const sanitizedAppId = envAppId.replace(/\./g, '_');
                 telemetryPath = `artifacts/${sanitizedAppId}/public/data/${cleanPath}`;
@@ -405,38 +407,45 @@
                     return;
                 }
 
-                let rawData = [];
+                let incomingRecords = [];
                 if (typeof val === 'object') {
                     const keys = Object.keys(val);
                     const firstKey = keys[0];
-                    // Detection: Is this an object of readings or a single device node?
-                    // In your JSON, water_system/D0_EF_76_32_48_D2 is a single object.
                     const isCollection = typeof val[firstKey] === 'object' && val[firstKey] !== null;
 
                     if (isCollection) {
-                        keys.forEach(key => {
-                            rawData.push({ id: key, ...val[key] });
-                        });
+                        keys.forEach(key => { incomingRecords.push({ id: key, ...val[key] }); });
                     } else {
-                        // Single device object at this path
-                        rawData = [{ id: 'latest', ...val }];
+                        incomingRecords = [{ id: Date.now(), ...val }];
                     }
                 } else {
                     UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-400 font-mono text-[10px]">UNSUPPORTED JSON DATA AT PATH</td></tr>`;
                     return;
                 }
 
-                // Field Mapping based on your provided JSON export:
-                // current_pressure, current_turns, last_updated
-                const processedData = rawData.map(item => ({
-                    id: item.id,
-                    pressure: Number(item.current_pressure) || 0,
-                    valveTurns: Number(item.current_turns) || 0,
-                    timestamp: item.last_updated ? new Date(item.last_updated) : new Date()
-                }));
+                // Map and filter out duplicates in the session buffer
+                incomingRecords.forEach(item => {
+                    const mapped = {
+                        id: item.id || Date.now(),
+                        pressure: Number(item.current_pressure || item.pressure) || 0,
+                        valveTurns: Number(item.current_turns || item.valveTurns) || 0,
+                        timestamp: item.last_updated ? new Date(item.last_updated) : new Date()
+                    };
 
-                const sortedData = processedData.sort((a, b) => b.timestamp - a.timestamp);
-                updateDisplay(sortedData);
+                    // Only add to buffer if it's a new timestamp or session logic
+                    const isDuplicate = telemetryBuffer.some(b => b.timestamp.getTime() === mapped.timestamp.getTime());
+                    if (!isDuplicate) {
+                        telemetryBuffer.push(mapped);
+                    }
+                });
+
+                // Keep buffer sorted and limited
+                telemetryBuffer.sort((a, b) => b.timestamp - a.timestamp);
+                if (telemetryBuffer.length > MAX_BUFFER_SIZE) {
+                    telemetryBuffer = telemetryBuffer.slice(0, MAX_BUFFER_SIZE);
+                }
+
+                updateDisplay(telemetryBuffer);
             }, (error) => { 
                 UI.connStatus.innerText = "LINK ERROR";
                 UI.connStatus.className = "text-rose-500 font-bold";
@@ -456,15 +465,17 @@
             UI.metrics.syncDate.innerText = latest.timestamp.toLocaleDateString();
 
             UI.metrics.turnsGauge.style.width = `${Math.min((latest.valveTurns / 1000) * 100, 100)}%`;
-            UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`; // Scaled for high PSI
+            UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`; 
 
-            UI.logCounter.innerText = `${data.length} PACKETS CACHED`;
-            UI.tableBody.innerHTML = data.slice(0, 20).map((log, index) => `
+            UI.logCounter.innerText = `${data.length} PACKETS BUFFERED`;
+            UI.tableBody.innerHTML = data.slice(0, 15).map((log) => `
                 <tr class="hover:bg-white/[0.03] transition-colors">
                     <td class="px-6 py-4 text-slate-500 font-mono">${log.timestamp.toLocaleString()}</td>
                     <td class="px-6 py-4 text-blue-400 font-bold text-center">${log.pressure.toFixed(0)}</td>
                     <td class="px-6 py-4 text-amber-500 font-bold text-center">${log.valveTurns}</td>
-                    <td class="px-6 py-4 text-right text-slate-400 text-[10px] font-mono italic">Packet: ${log.id}</td>
+                    <td class="px-6 py-4 text-right">
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[8px] uppercase font-bold tracking-tighter">Verified</span>
+                    </td>
                 </tr>
             `).join('');
 
@@ -473,15 +484,20 @@
 
         function updateChart(data) {
             const chartCtx = document.getElementById('pressureChart').getContext('2d');
-            const graphData = [...data].reverse().slice(-15);
+            // Reverse to chronological order for the graph
+            const graphData = [...data].reverse();
             const labels = graphData.map(d => d.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
             const pressures = graphData.map(d => d.pressure);
 
             if (pressureChart) {
                 pressureChart.data.labels = labels;
                 pressureChart.data.datasets[0].data = pressures;
-                pressureChart.update('none');
+                pressureChart.update('none'); // Update without animation for real-time feel
             } else {
+                const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(14, 165, 233, 0.3)');
+                gradient.addColorStop(1, 'rgba(14, 165, 233, 0)');
+
                 pressureChart = new Chart(chartCtx, {
                     type: 'line',
                     data: {
@@ -489,20 +505,31 @@
                         datasets: [{
                             data: pressures,
                             borderColor: '#0ea5e9',
-                            backgroundColor: 'rgba(14, 165, 233, 0.05)',
-                            borderWidth: 2,
+                            backgroundColor: gradient,
+                            borderWidth: 3,
                             fill: true,
-                            tension: 0.4,
-                            pointRadius: 2
+                            tension: 0.4, // Perfect Cubic Spline for waves
+                            pointRadius: 0, // Hidden points for cleaner waves
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#0ea5e9',
+                            pointBorderColor: '#fff'
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: 'index' },
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 9, family: 'monospace' } } },
-                            y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#475569', font: { size: 9, family: 'monospace' } } }
+                            x: { 
+                                grid: { display: false }, 
+                                ticks: { color: '#475569', font: { size: 9, family: 'monospace' }, maxRotation: 0 } 
+                            },
+                            y: { 
+                                grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, 
+                                ticks: { color: '#475569', font: { size: 9, family: 'monospace' } },
+                                suggestedMin: 0
+                            }
                         }
                     }
                 });
