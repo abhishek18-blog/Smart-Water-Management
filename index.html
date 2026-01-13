@@ -233,9 +233,12 @@
         </div>
 
         <!-- Debugging Info -->
-        <div id="debugConsole" class="bg-black/40 p-3 rounded-lg border border-white/10 font-mono text-[9px] text-slate-500 flex justify-between items-center">
-            <span>DATABASE_PATH: <span id="pathIndicator" class="text-blue-400 text-bold font-black">Initializing...</span></span>
-            <span id="connectionStatus" class="text-emerald-500 font-bold">OFFLINE</span>
+        <div id="debugConsole" class="bg-black/40 p-3 rounded-lg border border-white/10 font-mono text-[9px] text-slate-500 space-y-1">
+            <div class="flex justify-between items-center">
+                <span>DATABASE_URL: <span id="urlIndicator" class="text-blue-300 italic">...</span></span>
+                <span id="connectionStatus" class="font-bold">OFFLINE</span>
+            </div>
+            <div>PATH_TARGET: <span id="pathIndicator" class="text-blue-400 font-bold">Initializing...</span></div>
         </div>
     </div>
 
@@ -270,11 +273,17 @@
         // ==========================================
         // 2. DATA PATH CONFIGURATION
         // ==========================================
-        const CUSTOM_DATA_PATH = "water_system/Device"; 
+        const CUSTOM_DATA_PATH = "water_system/"; 
         // ==========================================
 
-        const isEnvMode = typeof __firebase_config !== 'undefined';
-        const finalConfig = isEnvMode ? JSON.parse(__firebase_config) : firebaseConfig;
+        // Priority Logic: Use user's config if they provided an API key. 
+        // Otherwise use environment internal config.
+        const userHasConfig = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
+        const finalConfig = userHasConfig 
+            ? firebaseConfig 
+            : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig);
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'standalone-monitor';
         
         const app = initializeApp(finalConfig);
         const auth = getAuth(app);
@@ -291,6 +300,7 @@
             googleBtn: document.getElementById('googleBtn'),
             loginError: document.getElementById('loginError'),
             pathIndicator: document.getElementById('pathIndicator'),
+            urlIndicator: document.getElementById('urlIndicator'),
             connStatus: document.getElementById('connectionStatus'),
             metrics: {
                 turns: document.getElementById('valveTurns'),
@@ -305,15 +315,20 @@
             timeLabel: document.getElementById('currentTime')
         };
 
+        UI.urlIndicator.innerText = finalConfig.databaseURL || "N/A";
+
         const initSession = async () => {
             try {
-                if (isEnvMode && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                if (!userHasConfig && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
+                    // Fallback session to allow database read if no user is signed in
                     await signInAnonymously(auth);
                 }
             } catch (e) {
                 console.error("Auth Failure:", e);
+                UI.connStatus.innerText = "AUTH ERROR";
+                UI.connStatus.className = "text-rose-400";
             }
         };
 
@@ -368,13 +383,14 @@
 
             setInterval(() => { UI.timeLabel.innerText = new Date().toLocaleTimeString(); }, 1000);
 
-            // Path calculation
+            // Path Calculation:
+            // If user provided config, use CUSTOM_DATA_PATH directly.
+            // If using environment config, prepend sandbox path.
             const cleanPath = CUSTOM_DATA_PATH.replace(/^\/|\/$/g, '');
             let telemetryPath = cleanPath;
 
-            // In the preview environment, we must follow strict rules
-            if (isEnvMode && typeof __app_id !== 'undefined') {
-                const sanitizedAppId = __app_id.replace(/\./g, '_');
+            if (!userHasConfig && typeof __app_id !== 'undefined') {
+                const sanitizedAppId = appId.replace(/\./g, '_');
                 telemetryPath = `artifacts/${sanitizedAppId}/public/data/${cleanPath}`;
             }
             
@@ -391,27 +407,25 @@
                     return;
                 }
 
-                // Handling case where Device node might be a single object or a collection
                 let rawData = [];
                 if (typeof val === 'object') {
-                    // Check if it's a collection of logs or just one reading
-                    const firstKey = Object.keys(val)[0];
+                    // Detect structure: Is it a collection of readings or a single object?
+                    const keys = Object.keys(val);
+                    const firstKey = keys[0];
                     const isCollection = typeof val[firstKey] === 'object' && val[firstKey] !== null;
 
                     if (isCollection) {
-                        Object.keys(val).forEach(key => {
+                        keys.forEach(key => {
                             rawData.push({ id: key, ...val[key] });
                         });
                     } else {
-                        // Single reading at this path
                         rawData = [{ id: 'latest', ...val }];
                     }
                 } else {
-                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-400 font-mono text-[10px]">UNSUPPORTED JSON STRUCTURE AT PATH</td></tr>`;
+                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-400 font-mono text-[10px]">UNSUPPORTED JSON DATA AT PATH</td></tr>`;
                     return;
                 }
 
-                // Process and Sort
                 const processedData = rawData.map(item => ({
                     id: item.id,
                     pressure: Number(item.pressure) || 0,
@@ -422,10 +436,10 @@
                 const sortedData = processedData.sort((a, b) => b.timestamp - a.timestamp);
                 updateDisplay(sortedData);
             }, (error) => { 
-                UI.connStatus.innerText = "ERROR";
+                UI.connStatus.innerText = "LINK ERROR";
                 UI.connStatus.className = "text-rose-500 font-bold";
                 if (error.code === 'PERMISSION_DENIED') {
-                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-500 font-mono text-[10px] uppercase tracking-widest">Permission Denied: Check Rules for [${telemetryPath}]</td></tr>`;
+                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-500 font-mono text-[10px] uppercase tracking-widest">Permission Denied: Confirm DB Rules allow READ at [${telemetryPath}]</td></tr>`;
                 }
             });
         }
