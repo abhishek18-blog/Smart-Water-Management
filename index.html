@@ -115,7 +115,7 @@
                     <label class="block text-sm font-medium mb-1 text-slate-300 font-mono text-[10px] uppercase tracking-wider">Access Key</label>
                     <input type="password" id="loginPass" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm" placeholder="••••••••" required>
                 </div>
-                <button type="submit" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
+                <button type="submit" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
                     Authorize Connection
                 </button>
             </form>
@@ -234,8 +234,8 @@
 
         <!-- Debugging Info -->
         <div id="debugConsole" class="bg-black/40 p-3 rounded-lg border border-white/10 font-mono text-[9px] text-slate-500 flex justify-between items-center">
-            <span>DATABASE_PATH: <span id="pathIndicator" class="text-blue-400">Initializing...</span></span>
-            <span id="connectionStatus" class="text-emerald-500">OFFLINE</span>
+            <span>DATABASE_PATH: <span id="pathIndicator" class="text-blue-400 text-bold font-black">Initializing...</span></span>
+            <span id="connectionStatus" class="text-emerald-500 font-bold">OFFLINE</span>
         </div>
     </div>
 
@@ -257,20 +257,20 @@
         // 1. FIREBASE CONFIGURATION (Southeast Asia)
         // ==========================================
         const firebaseConfig = {
-             apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+                     apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
             storageBucket: "project-water-b2dad.firebasestorage.app",
             messagingSenderId: "2593146798",
             appId: "1:2593146798:web:e964319324a7599fa56a3f"
-             };
+
+        };
 
         // ==========================================
         // 2. DATA PATH CONFIGURATION
-        // If your data is at the root, use "/". 
-        // If it is in a folder called "telemetry", use "telemetry".
-        const CUSTOM_DATA_PATH = "water_system"; 
+        // ==========================================
+        const CUSTOM_DATA_PATH = "water_system/Device"; 
         // ==========================================
 
         const isEnvMode = typeof __firebase_config !== 'undefined';
@@ -305,13 +305,11 @@
             timeLabel: document.getElementById('currentTime')
         };
 
-        // Rule 3: Ensure Auth is established
         const initSession = async () => {
             try {
                 if (isEnvMode && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
-                    // Start an anonymous session so the database can be read
                     await signInAnonymously(auth);
                 }
             } catch (e) {
@@ -336,7 +334,6 @@
             setTimeout(() => UI.loading.classList.add('hidden'), 500);
         });
 
-        // Email Login
         UI.loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             UI.loginError.classList.add('hidden');
@@ -350,7 +347,6 @@
             }
         });
 
-        // Google SSO
         UI.googleBtn.addEventListener('click', async () => {
             UI.loginError.classList.add('hidden');
             try {
@@ -372,37 +368,50 @@
 
             setInterval(() => { UI.timeLabel.innerText = new Date().toLocaleTimeString(); }, 1000);
 
-            // RESOLVE PATH:
-            // If the user has put their own config, we use their path directly.
-            // Only use the 'artifacts/...' prefix if in simulated environment mode.
-            let telemetryPath = CUSTOM_DATA_PATH;
+            // Path calculation
+            const cleanPath = CUSTOM_DATA_PATH.replace(/^\/|\/$/g, '');
+            let telemetryPath = cleanPath;
+
+            // In the preview environment, we must follow strict rules
             if (isEnvMode && typeof __app_id !== 'undefined') {
                 const sanitizedAppId = __app_id.replace(/\./g, '_');
-                telemetryPath = `artifacts/${sanitizedAppId}/public/data/${CUSTOM_DATA_PATH}`;
+                telemetryPath = `artifacts/${sanitizedAppId}/public/data/${cleanPath}`;
             }
             
-            UI.pathIndicator.innerText = telemetryPath;
+            UI.pathIndicator.innerText = telemetryPath || "/ (Root)";
             const telemetryRef = ref(db, telemetryPath);
 
             onValue(telemetryRef, (snapshot) => {
                 UI.connStatus.innerText = "CONNECTED";
-                UI.connStatus.className = "text-emerald-500";
+                UI.connStatus.className = "text-emerald-500 font-bold";
                 
-                const data = snapshot.val();
-                if (!data) {
+                const val = snapshot.val();
+                if (!val) {
                     UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 animate-pulse uppercase tracking-[0.2em] text-[10px]">No records found at path: [${telemetryPath}]</td></tr>`;
                     return;
                 }
 
-                // Transform Object/Array into a list
-                const rawData = [];
-                if (Array.isArray(data)) {
-                    data.forEach((item, index) => { if (item) rawData.push({ id: index, ...item }); });
+                // Handling case where Device node might be a single object or a collection
+                let rawData = [];
+                if (typeof val === 'object') {
+                    // Check if it's a collection of logs or just one reading
+                    const firstKey = Object.keys(val)[0];
+                    const isCollection = typeof val[firstKey] === 'object' && val[firstKey] !== null;
+
+                    if (isCollection) {
+                        Object.keys(val).forEach(key => {
+                            rawData.push({ id: key, ...val[key] });
+                        });
+                    } else {
+                        // Single reading at this path
+                        rawData = [{ id: 'latest', ...val }];
+                    }
                 } else {
-                    Object.keys(data).forEach(key => { rawData.push({ id: key, ...data[key] }); });
+                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-400 font-mono text-[10px]">UNSUPPORTED JSON STRUCTURE AT PATH</td></tr>`;
+                    return;
                 }
 
-                // Map fields (adjust keys here if your JSON uses different names)
+                // Process and Sort
                 const processedData = rawData.map(item => ({
                     id: item.id,
                     pressure: Number(item.pressure) || 0,
@@ -414,7 +423,7 @@
                 updateDisplay(sortedData);
             }, (error) => { 
                 UI.connStatus.innerText = "ERROR";
-                UI.connStatus.className = "text-rose-500";
+                UI.connStatus.className = "text-rose-500 font-bold";
                 if (error.code === 'PERMISSION_DENIED') {
                     UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-rose-500 font-mono text-[10px] uppercase tracking-widest">Permission Denied: Check Rules for [${telemetryPath}]</td></tr>`;
                 }
