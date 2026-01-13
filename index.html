@@ -234,11 +234,14 @@
 
         <!-- Debugging Info -->
         <div id="debugConsole" class="bg-black/40 p-3 rounded-lg border border-white/10 font-mono text-[9px] text-slate-500 space-y-1">
-            <div class="flex justify-between items-center">
-                <span>DATABASE_URL: <span id="urlIndicator" class="text-blue-300 italic">...</span></span>
+            <div class="flex justify-between items-center text-[10px]">
+                <span class="uppercase tracking-widest font-bold">System Diagnostics</span>
                 <span id="connectionStatus" class="font-bold">OFFLINE</span>
             </div>
-            <div>PATH_TARGET: <span id="pathIndicator" class="text-blue-400 font-bold">Initializing...</span></div>
+            <div class="border-t border-white/5 pt-1 mt-1 flex flex-col gap-0.5">
+                <div>DATABASE_URL: <span id="urlIndicator" class="text-blue-300 italic">...</span></div>
+                <div>PATH_TARGET: <span id="pathIndicator" class="text-blue-400 font-bold">Initializing...</span></div>
+            </div>
         </div>
     </div>
 
@@ -260,7 +263,7 @@
         // 1. FIREBASE CONFIGURATION (Southeast Asia)
         // ==========================================
         const firebaseConfig = {
-                     apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+           apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
@@ -272,18 +275,15 @@
 
         // ==========================================
         // 2. DATA PATH CONFIGURATION
+        // According to your JSON, the device data is nested under 'water_system'
+        // and its specific MAC address.
         // ==========================================
-        const CUSTOM_DATA_PATH = "water_system/"; 
+        const CUSTOM_DATA_PATH = "water_system/D0_EF_76_32_48_D2"; 
         // ==========================================
 
-        // Priority Logic: Use user's config if they provided an API key. 
-        // Otherwise use environment internal config.
-        const userHasConfig = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
-        const finalConfig = userHasConfig 
-            ? firebaseConfig 
-            : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig);
-        
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'standalone-monitor';
+        const isEnvMode = typeof __firebase_config !== 'undefined';
+        const finalConfig = isEnvMode ? JSON.parse(__firebase_config) : firebaseConfig;
+        const envAppId = typeof __app_id !== 'undefined' ? __app_id : 'standalone-monitor';
         
         const app = initializeApp(finalConfig);
         const auth = getAuth(app);
@@ -319,10 +319,9 @@
 
         const initSession = async () => {
             try {
-                if (!userHasConfig && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                if (isEnvMode && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
-                    // Fallback session to allow database read if no user is signed in
                     await signInAnonymously(auth);
                 }
             } catch (e) {
@@ -384,13 +383,12 @@
             setInterval(() => { UI.timeLabel.innerText = new Date().toLocaleTimeString(); }, 1000);
 
             // Path Calculation:
-            // If user provided config, use CUSTOM_DATA_PATH directly.
-            // If using environment config, prepend sandbox path.
             const cleanPath = CUSTOM_DATA_PATH.replace(/^\/|\/$/g, '');
             let telemetryPath = cleanPath;
 
-            if (!userHasConfig && typeof __app_id !== 'undefined') {
-                const sanitizedAppId = appId.replace(/\./g, '_');
+            // Prepend Sandbox Prefix ONLY if using the environment-provided configuration
+            if (isEnvMode && (finalConfig.apiKey === "YOUR_API_KEY" || finalConfig.apiKey === "")) {
+                const sanitizedAppId = envAppId.replace(/\./g, '_');
                 telemetryPath = `artifacts/${sanitizedAppId}/public/data/${cleanPath}`;
             }
             
@@ -409,9 +407,10 @@
 
                 let rawData = [];
                 if (typeof val === 'object') {
-                    // Detect structure: Is it a collection of readings or a single object?
                     const keys = Object.keys(val);
                     const firstKey = keys[0];
+                    // Detection: Is this an object of readings or a single device node?
+                    // In your JSON, water_system/D0_EF_76_32_48_D2 is a single object.
                     const isCollection = typeof val[firstKey] === 'object' && val[firstKey] !== null;
 
                     if (isCollection) {
@@ -419,6 +418,7 @@
                             rawData.push({ id: key, ...val[key] });
                         });
                     } else {
+                        // Single device object at this path
                         rawData = [{ id: 'latest', ...val }];
                     }
                 } else {
@@ -426,11 +426,13 @@
                     return;
                 }
 
+                // Field Mapping based on your provided JSON export:
+                // current_pressure, current_turns, last_updated
                 const processedData = rawData.map(item => ({
                     id: item.id,
-                    pressure: Number(item.pressure) || 0,
-                    valveTurns: Number(item.valveTurns) || 0,
-                    timestamp: item.timestamp ? new Date(item.timestamp) : new Date()
+                    pressure: Number(item.current_pressure) || 0,
+                    valveTurns: Number(item.current_turns) || 0,
+                    timestamp: item.last_updated ? new Date(item.last_updated) : new Date()
                 }));
 
                 const sortedData = processedData.sort((a, b) => b.timestamp - a.timestamp);
@@ -454,15 +456,15 @@
             UI.metrics.syncDate.innerText = latest.timestamp.toLocaleDateString();
 
             UI.metrics.turnsGauge.style.width = `${Math.min((latest.valveTurns / 1000) * 100, 100)}%`;
-            UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 150) * 100, 100)}%`;
+            UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`; // Scaled for high PSI
 
             UI.logCounter.innerText = `${data.length} PACKETS CACHED`;
             UI.tableBody.innerHTML = data.slice(0, 20).map((log, index) => `
                 <tr class="hover:bg-white/[0.03] transition-colors">
-                    <td class="px-6 py-4 text-slate-500">${data.length - index}</td>
-                    <td class="px-6 py-4 text-blue-400 font-bold">${log.pressure.toFixed(2)}</td>
-                    <td class="px-6 py-4 text-amber-500 font-bold">${log.valveTurns}</td>
-                    <td class="px-6 py-4 text-right text-slate-400 text-[10px] font-mono">${log.timestamp.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-slate-500 font-mono">${log.timestamp.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-blue-400 font-bold text-center">${log.pressure.toFixed(0)}</td>
+                    <td class="px-6 py-4 text-amber-500 font-bold text-center">${log.valveTurns}</td>
+                    <td class="px-6 py-4 text-right text-slate-400 text-[10px] font-mono italic">Packet: ${log.id}</td>
                 </tr>
             `).join('');
 
