@@ -170,7 +170,7 @@
                     </div>
                 </div>
                 <div id="diagCaseBox" class="bg-slate-900/50 px-4 py-2 rounded-lg border border-white/5 min-w-[200px]">
-                    <span class="text-[9px] text-slate-500 uppercase font-mono block mb-1">Detected Scenario</span>
+                    <span class="text-[9px] text-slate-500 uppercase font-mono block mb-1">Pipeline Assessment</span>
                     <span id="diagCase" class="text-xs font-mono text-blue-400">WAITING_FOR_DATA</span>
                 </div>
             </div>
@@ -267,7 +267,7 @@
 
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
-             apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+                apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
@@ -466,27 +466,65 @@
             renderActiveDevice();
         });
 
-        // Diagnostic Intelligence logic
+        // Diagnostic Intelligence logic - Refined for Real Pipeline Standards
         function performDiagnostic(pressure, turns) {
-            const NO_FLOW_PRESSURE = 10;
-            const HAZARD_PRESSURE = 2500;
-            
-            if (pressure >= HAZARD_PRESSURE) {
-                return { status: "System Overload: Emergency Venting Required", caseCode: "HAZARD_OVERPRESSURE", color: "rose", icon: "fa-radiation" };
+            // REAL PIPELINE THRESHOLDS (Based on Industrial Standard & your 2002 PSI data)
+            const MIN_OPERATING_PRESSURE = 30; // PSI (Anything below is "no flow")
+            const NOMINAL_PRESSURE_MIN = 1000;  // Typical pipeline operating start
+            const CRITICAL_HIGH_PRESSURE = 2600; // Hazard threshold
+            const LEAK_SENSITIVITY = 50; // PSI (Remaining pressure when valve closed)
+
+            // Case 1: Overpressure Hazard
+            if (pressure >= CRITICAL_HIGH_PRESSURE) {
+                return { 
+                    status: "DANGER: CRITICAL OVERPRESSURE", 
+                    caseCode: "HAZARD_REROUTE_REQUIRED", 
+                    color: "rose", 
+                    icon: "fa-radiation" 
+                };
             }
-            if (turns === 0 && pressure > NO_FLOW_PRESSURE) {
-                return { status: "Critical Alert: Valve Leakage Detected", caseCode: "VALVE_SEAL_FAILURE", color: "rose", icon: "fa-tint-slash" };
+
+            // Case 2: Leakage (Valve 0 but pressure detected)
+            if (turns === 0 && pressure > LEAK_SENSITIVITY) {
+                return { 
+                    status: "SEAL BREACH: VALVE LEAKAGE DETECTED", 
+                    caseCode: "STATIC_LEAK_ALERT", 
+                    color: "rose", 
+                    icon: "fa-tint-slash" 
+                };
             }
-            if (turns !== 0 && pressure <= NO_FLOW_PRESSURE) {
-                return { status: "Flow Warning: Zero Pressure on Active Valve", caseCode: "POTENTIAL_BLOCKAGE", color: "amber", icon: "fa-exclamation-triangle" };
+
+            // Case 3: Blockage (Valve open but no flow pressure)
+            if (turns !== 0 && pressure < MIN_OPERATING_PRESSURE) {
+                return { 
+                    status: "SUPPLY FAILURE: NO PRESSURE ON OPEN VALVE", 
+                    caseCode: "BLOCKAGE_OR_PUMP_FAILURE", 
+                    color: "amber", 
+                    icon: "fa-exclamation-triangle" 
+                };
             }
-            if (turns !== 0 && pressure > NO_FLOW_PRESSURE) {
-                return { status: "Optimal Flow: System Working as Intended", caseCode: "ACTIVE_FLOW_NOMINAL", color: "emerald", icon: "fa-check-double" };
+
+            // Case 4: Optimal Flow
+            if (turns !== 0 && pressure >= NOMINAL_PRESSURE_MIN) {
+                return { 
+                    status: "OPTIMAL FLOW: PIPELINE NOMINAL", 
+                    caseCode: "ACTIVE_UPLINK_SUCCESS", 
+                    color: "emerald", 
+                    icon: "fa-check-double" 
+                };
             }
-            if (turns === 0 && pressure <= NO_FLOW_PRESSURE) {
-                return { status: "Secure State: System Offline and Secured", caseCode: "SECURED_OFFLINE", color: "emerald", icon: "fa-shield-alt" };
+
+            // Case 5: Secured State
+            if (turns === 0 && pressure < MIN_OPERATING_PRESSURE) {
+                return { 
+                    status: "SECURED: VALVE CLOSED & OFFLINE", 
+                    caseCode: "NORMAL_SHUTDOWN_STATE", 
+                    color: "emerald", 
+                    icon: "fa-shield-alt" 
+                };
             }
-            return { status: "Analyzing...", caseCode: "INITIALIZING", color: "blue", icon: "fa-brain" };
+
+            return { status: "Analyzing...", caseCode: "SYSTEM_STABILIZING", color: "blue", icon: "fa-brain" };
         }
 
         function renderActiveDevice() {
@@ -501,6 +539,7 @@
             UI.metrics.syncTime.innerText = latest.timestamp.toLocaleTimeString();
             UI.metrics.syncDate.innerText = latest.timestamp.toLocaleDateString();
 
+            // Updated Gauge scaling for industrial PSI (Max 3000)
             UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`;
             UI.metrics.turnsGauge.style.width = `${Math.min((Math.abs(latest.turns) / 1000) * 100, 100)}%`;
 
