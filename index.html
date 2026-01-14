@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial Valve Monitor | Multi-Device</title>
+    <title>Industrial Valve Monitor | Multi-System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -134,17 +134,17 @@
                     <i class="fas fa-server text-blue-400 text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold">Node Monitor</h2>
+                    <h2 class="text-xl font-bold">Multi-System Monitor</h2>
                     <p class="text-slate-500 font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
-                        <span class="status-pulse"></span> Network Active
+                        <span class="status-pulse"></span> Dual Uplink Established
                     </p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
                 <div class="relative">
-                    <select id="deviceSelector" class="bg-slate-800 border border-white/10 text-white font-mono text-xs rounded-lg px-4 py-2 pr-10 min-w-[200px] focus:border-blue-500 outline-none transition-all">
-                        <option value="">Searching for Devices...</option>
+                    <select id="deviceSelector" class="bg-slate-800 border border-white/10 text-white font-mono text-xs rounded-lg px-4 py-2 pr-10 min-w-[240px] focus:border-blue-500 outline-none transition-all">
+                        <option value="">Detecting Systems...</option>
                     </select>
                 </div>
                 <button id="logoutBtn" class="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-800 border border-white/10 text-slate-400 hover:text-rose-400 transition-all">
@@ -189,7 +189,7 @@
                 <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     <i class="fas fa-wave-square text-blue-400"></i> Waveform Analysis
                 </h3>
-                <span id="graphLabel" class="text-[9px] font-mono text-blue-500 bg-blue-500/10 px-2 py-1 rounded">No Data</span>
+                <span id="graphLabel" class="text-[9px] font-mono text-blue-500 bg-blue-500/10 px-2 py-1 rounded italic uppercase tracking-tighter">No Data Selected</span>
             </div>
             <div class="h-64"><canvas id="pressureChart"></canvas></div>
         </div>
@@ -198,7 +198,7 @@
         <div class="glass overflow-hidden">
             <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
                 <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">Device Event Log</h3>
-                <span id="logCounter" class="text-[9px] font-mono text-slate-500">0 Items</span>
+                <span id="logCounter" class="text-[9px] font-mono text-slate-500">0 Items Cached</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse font-mono text-[11px]">
@@ -207,23 +207,23 @@
                             <th class="px-6 py-3">Timestamp</th>
                             <th class="px-6 py-3 text-center">Pressure</th>
                             <th class="px-6 py-3 text-center">Turns</th>
-                            <th class="px-6 py-3 text-right">Status</th>
+                            <th class="px-6 py-3 text-right">System Origin</th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody" class="divide-y divide-white/5">
-                        <tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">Select a device to view logs...</td></tr>
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">Please select a device node from the uplink selector...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <!-- Debugging -->
-        <div class="mt-6 flex gap-4 text-[9px] font-mono text-slate-500 uppercase tracking-widest">
+        <div class="mt-6 flex flex-wrap gap-4 text-[9px] font-mono text-slate-500 uppercase tracking-widest">
             <div class="bg-black/40 px-3 py-2 rounded-lg border border-white/5">
-                Path: <span id="pathIndicator" class="text-blue-400">devices</span>
+                Active Nodes: <span id="activeNodesDisplay" class="text-blue-400 font-bold">devices, water_system</span>
             </div>
             <div class="bg-black/40 px-3 py-2 rounded-lg border border-white/5">
-                Conn: <span id="connectionStatus" class="text-emerald-500 font-bold italic">HANDSHAKING...</span>
+                Conn Status: <span id="connectionStatus" class="text-emerald-500 font-bold italic">HANDSHAKING...</span>
             </div>
         </div>
     </div>
@@ -242,8 +242,7 @@
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // --- CONFIGURATION ---
-        // REPLACE WITH YOUR FIREBASE KEYS
+        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
@@ -255,9 +254,9 @@
 
         };
 
-        // DATABASE PATH: Root node for devices
-        const DATA_ROOT = "devices"; 
-        // ----------------------
+        // DUAL MONITORING ROOTS
+        const MONITOR_PATHS = ["devices", "water_system"];
+        // ------------------------------
 
         const isEnvMode = typeof __firebase_config !== 'undefined';
         const finalConfig = (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") 
@@ -270,9 +269,9 @@
         const googleProvider = new GoogleAuthProvider();
 
         // State Management
-        let deviceList = [];
-        let selectedDeviceId = null;
-        let deviceDataBuffers = {}; 
+        let combinedDeviceList = []; // Array of objects { id, path, label }
+        let selectedCompositeId = null; // "path:mac"
+        let deviceDataBuffers = {}; // { "path:mac": [ {pressure, turns, timestamp}, ... ] }
         let pressureChart = null;
         let isAuthBusy = false; 
         const MAX_HISTORY = 40;
@@ -285,7 +284,6 @@
             googleBtn: document.getElementById('googleBtn'),
             loginError: document.getElementById('loginError'),
             deviceSelector: document.getElementById('deviceSelector'),
-            pathIndicator: document.getElementById('pathIndicator'),
             connStatus: document.getElementById('connectionStatus'),
             graphLabel: document.getElementById('graphLabel'),
             metrics: {
@@ -300,7 +298,7 @@
             logCounter: document.getElementById('logCounter')
         };
 
-        // Authentication Flow
+        // Authentication
         const initSession = async () => {
             if (isAuthBusy) return;
             isAuthBusy = true;
@@ -308,13 +306,12 @@
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
-                    // Only auto-sign-in if no custom key provided
                     if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
                         await signInAnonymously(auth);
                     }
                 }
             } catch (e) { 
-                console.error("Auth Initialization Error", e); 
+                console.error("Auth Init Error", e); 
             } finally {
                 isAuthBusy = false;
             }
@@ -325,7 +322,7 @@
                 UI.auth.classList.add('hidden');
                 UI.dash.style.display = 'block';
                 setTimeout(() => UI.dash.style.opacity = '1', 50);
-                startMonitoring();
+                startDualMonitoring();
             } else {
                 UI.dash.style.opacity = '0';
                 setTimeout(() => { 
@@ -361,14 +358,7 @@
             try { 
                 await signInWithPopup(auth, googleProvider); 
             } catch (err) { 
-                console.error("Popup error:", err);
-                if (err.code === 'auth/unauthorized-domain') {
-                    UI.loginError.innerText = "Error: Domain not authorized in Firebase Console.";
-                } else if (err.code === 'auth/popup-blocked') {
-                    UI.loginError.innerText = "Error: Popup blocked by browser.";
-                } else {
-                    UI.loginError.innerText = "Login Failed: " + err.message;
-                }
+                UI.loginError.innerText = "Login Failed: " + (err.code === 'auth/unauthorized-domain' ? "Domain not authorized." : err.message);
                 UI.loginError.classList.remove('hidden');
             } finally {
                 isAuthBusy = false;
@@ -377,102 +367,103 @@
 
         document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
-        // Data Management
-        function startMonitoring() {
+        // Simultaneous Multi-Path Monitoring
+        function startDualMonitoring() {
             if (!auth.currentUser) return;
 
-            // MANDATORY RULE 1: For internal DB use, path MUST start with artifacts/{id}/public/data/
-            let finalPath = DATA_ROOT;
             const isUsingProvidedConfig = !firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY";
-            
-            if (isUsingProvidedConfig) {
-                const appId = typeof __app_id !== 'undefined' ? __app_id.replace(/\./g, '_') : 'default';
-                finalPath = `artifacts/${appId}/public/data/${DATA_ROOT}`;
-            }
+            const appId = typeof __app_id !== 'undefined' ? __app_id.replace(/\./g, '_') : 'default';
 
-            UI.pathIndicator.innerText = finalPath;
-            const waterRef = ref(db, finalPath);
-
-            onValue(waterRef, (snapshot) => {
-                UI.connStatus.innerText = "CONNECTED";
-                UI.connStatus.className = "text-emerald-500 font-bold";
-                
-                const rootData = snapshot.val();
-                if (!rootData) {
-                    UI.tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">No data broadcast at: ${finalPath}</td></tr>`;
-                    return;
+            MONITOR_PATHS.forEach(pathName => {
+                let finalPath = pathName;
+                if (isUsingProvidedConfig) {
+                    finalPath = `artifacts/${appId}/public/data/${pathName}`;
                 }
 
-                // 1. Refresh Device List
-                const currentKeys = Object.keys(rootData).filter(key => typeof rootData[key] === 'object');
-                
-                if (currentKeys.length > 0) {
-                    if (JSON.stringify(currentKeys.sort()) !== JSON.stringify([...deviceList].sort())) {
-                        deviceList = currentKeys;
-                        updateSelectorUI();
-                    }
+                const dataRef = ref(db, finalPath);
+                onValue(dataRef, (snapshot) => {
+                    UI.connStatus.innerText = "UPLINK_LIVE";
+                    UI.connStatus.className = "text-emerald-500 font-bold";
+                    
+                    const rootData = snapshot.val();
+                    if (!rootData) return;
 
-                    // 2. Process Data for all devices
-                    deviceList.forEach(mac => {
+                    // Filter out keys that aren't device objects
+                    const deviceKeys = Object.keys(rootData).filter(key => typeof rootData[key] === 'object');
+                    
+                    deviceKeys.forEach(mac => {
+                        const compositeId = `${pathName}:${mac}`;
                         const deviceObj = rootData[mac];
+                        
+                        // Map Data Point
                         const point = {
                             pressure: Number(deviceObj.current_pressure || deviceObj.pressure) || 0,
                             turns: Number(deviceObj.current_turns || deviceObj.valveTurns) || 0,
-                            timestamp: deviceObj.last_updated ? new Date(deviceObj.last_updated) : new Date()
+                            timestamp: deviceObj.last_updated ? new Date(deviceObj.last_updated) : new Date(),
+                            origin: pathName
                         };
 
-                        if (!deviceDataBuffers[mac]) deviceDataBuffers[mac] = [];
+                        // Initialize Buffer if new
+                        if (!deviceDataBuffers[compositeId]) {
+                            deviceDataBuffers[compositeId] = [];
+                            combinedDeviceList.push({
+                                compositeId: compositeId,
+                                mac: mac,
+                                path: pathName,
+                                label: `${pathName.toUpperCase()} / ${mac}`
+                            });
+                            updateSelectorUI();
+                        }
                         
-                        const lastPoint = deviceDataBuffers[mac][0];
+                        // Update Buffer
+                        const buffer = deviceDataBuffers[compositeId];
+                        const lastPoint = buffer[0];
                         if (!lastPoint || lastPoint.timestamp.getTime() !== point.timestamp.getTime()) {
-                            deviceDataBuffers[mac].unshift(point);
-                            if (deviceDataBuffers[mac].length > MAX_HISTORY) deviceDataBuffers[mac].pop();
+                            buffer.unshift(point);
+                            if (buffer.length > MAX_HISTORY) buffer.pop();
                         }
                     });
 
-                    // 3. Update active view
-                    if (selectedDeviceId) {
+                    // Trigger render if this path contains our selected device
+                    if (selectedCompositeId && selectedCompositeId.startsWith(pathName + ":")) {
                         renderActiveDevice();
-                    } else if (deviceList.length > 0) {
-                        selectedDeviceId = deviceList[0];
-                        UI.deviceSelector.value = selectedDeviceId;
+                    } else if (!selectedCompositeId && combinedDeviceList.length > 0) {
+                        selectedCompositeId = combinedDeviceList[0].compositeId;
+                        UI.deviceSelector.value = selectedCompositeId;
                         renderActiveDevice();
                     }
-                }
-            }, (err) => {
-                console.error("Database Error:", err);
-                UI.connStatus.innerText = "PERMISSION DENIED";
-                UI.connStatus.className = "text-rose-500";
-                
-                // Show user friendly error for permission issue
-                UI.tableBody.innerHTML = `
-                    <tr><td colspan="4" class="px-6 py-8 text-center text-rose-400">
-                        <i class="fas fa-lock mr-2"></i> Access Denied<br>
-                        <span class="text-[9px] opacity-60 uppercase mt-1 block">Path Target: ${finalPath}</span>
-                        <span class="text-[9px] opacity-60 block mt-2">If using custom keys, check database rules.<br>If in Canvas, ensure usingartifacts/... structure.</span>
-                    </td></tr>`;
+                }, (err) => {
+                    console.error(`Error at ${pathName}:`, err);
+                });
             });
         }
 
         function updateSelectorUI() {
             const currentSelection = UI.deviceSelector.value;
-            const html = deviceList.map(mac => `<option value="${mac}">${mac}</option>`).join('');
+            // Sort by path then MAC
+            combinedDeviceList.sort((a, b) => a.label.localeCompare(b.label));
+            
+            const html = combinedDeviceList.map(dev => 
+                `<option value="${dev.compositeId}">${dev.label}</option>`
+            ).join('');
+            
             UI.deviceSelector.innerHTML = html;
-            if (deviceList.includes(currentSelection)) {
+            if (currentSelection && combinedDeviceList.some(d => d.compositeId === currentSelection)) {
                 UI.deviceSelector.value = currentSelection;
             }
         }
 
         UI.deviceSelector.addEventListener('change', (e) => {
-            selectedDeviceId = e.target.value;
+            selectedCompositeId = e.target.value;
             renderActiveDevice();
         });
 
         function renderActiveDevice() {
-            const buffer = deviceDataBuffers[selectedDeviceId] || [];
+            const buffer = deviceDataBuffers[selectedCompositeId] || [];
             if (buffer.length === 0) return;
 
             const latest = buffer[0];
+            const deviceInfo = combinedDeviceList.find(d => d.compositeId === selectedCompositeId);
 
             UI.metrics.pressure.innerHTML = `${latest.pressure.toFixed(1)} <span class="text-sm font-normal text-slate-500">PSI</span>`;
             UI.metrics.turns.innerText = latest.turns;
@@ -482,19 +473,19 @@
             UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`;
             UI.metrics.turnsGauge.style.width = `${Math.min((Math.abs(latest.turns) / 1000) * 100, 100)}%`;
 
-            UI.logCounter.innerText = `${buffer.length} PACKETS`;
+            UI.logCounter.innerText = `${buffer.length} PACKETS CACHED`;
             UI.tableBody.innerHTML = buffer.slice(0, 10).map(log => `
                 <tr class="hover:bg-white/[0.02]">
                     <td class="px-6 py-3 text-slate-400 font-mono">${log.timestamp.toLocaleTimeString()}</td>
                     <td class="px-6 py-3 text-center text-blue-400 font-bold">${log.pressure.toFixed(0)}</td>
                     <td class="px-6 py-3 text-center text-amber-500 font-bold">${log.turns}</td>
                     <td class="px-6 py-3 text-right">
-                        <span class="text-[8px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 uppercase font-bold">LIVE_DATA</span>
+                        <span class="text-[8px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase font-bold">${log.origin}</span>
                     </td>
                 </tr>
             `).join('');
 
-            UI.graphLabel.innerText = `Node: ${selectedDeviceId}`;
+            UI.graphLabel.innerText = `OSCILLATION TARGET: ${deviceInfo?.label}`;
             updateChart(buffer);
         }
 
