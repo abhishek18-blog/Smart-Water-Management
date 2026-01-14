@@ -534,7 +534,7 @@
             const latest = buffer[0];
             const deviceInfo = combinedDeviceList.find(d => d.compositeId === selectedCompositeId);
 
-            UI.metrics.pressure.innerHTML = `${latest.pressure.toFixed(1)} <span class="text-sm font-normal text-slate-500">Piezo sesnor</span>`;
+            UI.metrics.pressure.innerHTML = `${latest.pressure.toFixed(1)} <span class="text-sm font-normal text-slate-500">Piezo sensor reading</span>`;
             UI.metrics.turns.innerText = latest.turns;
             UI.metrics.syncTime.innerText = latest.timestamp.toLocaleTimeString();
             UI.metrics.syncDate.innerText = latest.timestamp.toLocaleDateString();
