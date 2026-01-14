@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial Valve Monitor | Multi-System</title>
+    <title>Smart Valve Monitor | Industrial IoT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,23 +26,6 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
-        }
-
-        .auth-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease-in-out;
-        }
-
-        .dashboard-container {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-            padding: 1.5rem;
-            max-width: 1200px;
-            margin: 0 auto;
         }
 
         .status-pulse {
@@ -87,10 +70,6 @@
             background-position: right 0.75rem center;
             background-size: 1rem;
         }
-
-        .diagnostic-card {
-            transition: all 0.3s ease;
-        }
     </style>
 </head>
 <body>
@@ -102,7 +81,7 @@
     </div>
 
     <!-- Authentication -->
-    <div id="authSection" class="auth-container hidden">
+    <div id="authSection" class="min-h-screen flex items-center justify-center hidden">
         <div class="glass p-8 w-full max-w-md mx-4 text-center">
             <div class="mb-8 text-center">
                 <i class="fas fa-microchip text-blue-400 text-4xl mb-4"></i>
@@ -111,8 +90,8 @@
             </div>
             
             <form id="loginForm" class="space-y-4 text-left">
-                <input type="email" id="loginEmail" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm" placeholder="Operator Email" required>
-                <input type="password" id="loginPass" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm" placeholder="Security Key" required>
+                <input type="email" id="loginEmail" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 outline-none" placeholder="Operator Email" required>
+                <input type="password" id="loginPass" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 outline-none" placeholder="Security Key" required>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all uppercase tracking-widest text-xs">Connect</button>
             </form>
 
@@ -130,24 +109,24 @@
     </div>
 
     <!-- Dashboard -->
-    <div id="dashboardSection" class="dashboard-container">
+    <div id="dashboardSection" class="opacity-0 transition-opacity duration-500 p-4 md:p-8 max-w-7xl mx-auto hidden">
         <!-- Multi-Device Header -->
-        <header class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div class="flex items-center gap-4">
                 <div class="bg-blue-500/20 p-3 rounded-xl">
                     <i class="fas fa-server text-blue-400 text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold">Multi-System Monitor</h2>
+                    <h2 class="text-2xl font-bold">Industrial Monitoring</h2>
                     <p class="text-slate-500 font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
-                        <span class="status-pulse"></span> Dual Uplink Established
+                        <span class="status-pulse"></span> Network Nodes Active
                     </p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
                 <div class="relative">
-                    <select id="deviceSelector" class="bg-slate-800 border border-white/10 text-white font-mono text-xs rounded-lg px-4 py-2 pr-10 min-w-[240px] focus:border-blue-500 outline-none transition-all">
+                    <select id="deviceSelector" class="bg-slate-800 border border-white/10 text-white font-mono text-xs rounded-lg px-4 py-2 pr-10 min-w-[240px] focus:border-blue-500 outline-none transition-all cursor-pointer">
                         <option value="">Detecting Systems...</option>
                     </select>
                 </div>
@@ -157,96 +136,89 @@
             </div>
         </header>
 
-        <!-- System Diagnostic logic display -->
-        <div id="diagnosticPanel" class="glass mb-6 border-l-4 border-l-blue-500 overflow-hidden">
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <div id="diagIconBox" class="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-400">
-                        <i id="diagIcon" class="fas fa-brain text-xl"></i>
+        <!-- System Diagnostic Intelligence -->
+        <div id="diagnosticPanel" class="glass mb-8 border-l-4 border-l-blue-500 overflow-hidden shadow-xl">
+            <div class="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-6">
+                    <div id="diagIconBox" class="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <i id="diagIcon" class="fas fa-brain text-2xl"></i>
                     </div>
                     <div>
-                        <h3 class="text-xs font-bold text-slate-500 uppercase font-mono tracking-widest">System Intelligence</h3>
-                        <p id="diagStatus" class="text-lg font-bold text-white leading-tight">Analyzing system state...</p>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest mb-1">System Intelligence</h3>
+                        <p id="diagStatus" class="text-xl font-bold text-white leading-tight">Analyzing Telemetry...</p>
                     </div>
                 </div>
-                <div id="diagCaseBox" class="bg-slate-900/50 px-4 py-2 rounded-lg border border-white/5 min-w-[200px]">
-                    <span class="text-[9px] text-slate-500 uppercase font-mono block mb-1">Pipeline Assessment</span>
-                    <span id="diagCase" class="text-xs font-mono text-blue-400">WAITING_FOR_DATA</span>
+                <div id="diagCaseBox" class="bg-black/30 px-6 py-3 rounded-xl border border-white/5 min-w-[220px]">
+                    <span class="text-[9px] text-slate-500 uppercase font-mono block mb-1">Operational Case</span>
+                    <span id="diagCase" class="text-xs font-mono font-bold tracking-wider text-blue-400">WAITING_FOR_DATA</span>
                 </div>
             </div>
         </div>
 
-        <!-- Selected Device Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="glass p-5 border-t-2 border-t-blue-500">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono">Pressure Level</span>
-                    <i class="fas fa-tachometer-alt text-blue-400 text-xs"></i>
+        <!-- Metric Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Piezo Reading -->
+            <div class="glass p-6 border-t-2 border-t-blue-500">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest">Piezo Sensor Reading</span>
+                    <i class="fas fa-wave-square text-blue-400 text-xs"></i>
                 </div>
-                <div class="text-3xl font-mono font-bold" id="pressureVal">-- <span class="text-sm font-normal text-slate-500">Piezo sensor reading</span></div>
-                <div class="mt-4 gauge-bar"><div id="pressureGauge" class="gauge-fill"></div></div>
+                <div class="text-4xl font-mono font-bold" id="piezoVal">-- <span class="text-sm font-normal text-slate-500">RAW</span></div>
+                <div class="mt-6 gauge-bar"><div id="piezoGauge" class="gauge-fill bg-blue-500"></div></div>
             </div>
 
-            <div class="glass p-5 border-t-2 border-t-amber-500">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono">Mechanical Turns</span>
+            <!-- Valve Turns -->
+            <div class="glass p-6 border-t-2 border-t-amber-500">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest">No. of Valve Turns</span>
                     <i class="fas fa-redo-alt text-amber-400 text-xs"></i>
                 </div>
-                <div class="text-3xl font-mono font-bold" id="valveTurns">--</div>
-                <div class="mt-4 gauge-bar"><div id="turnsGauge" class="gauge-fill bg-amber-500"></div></div>
+                <div class="text-4xl font-mono font-bold" id="valveTurns">--</div>
+                <div class="mt-6 gauge-bar"><div id="turnsGauge" class="gauge-fill bg-amber-500"></div></div>
             </div>
 
-            <div class="glass p-5 border-t-2 border-t-purple-500">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono">Last Sync</span>
-                    <i class="fas fa-clock text-purple-400 text-xs"></i>
+            <!-- Timestamp -->
+            <div class="glass p-6 border-t-2 border-t-purple-500">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest">Last Sync Timestamp</span>
+                    <i class="fas fa-history text-purple-400 text-xs"></i>
                 </div>
-                <div class="text-lg font-mono font-bold leading-tight" id="lastSyncTime">--:--:--</div>
-                <div class="text-[9px] font-mono text-slate-500 mt-1" id="lastSyncDate">NODES OFFLINE</div>
+                <div class="text-xl font-mono font-bold leading-tight" id="lastSyncTime">--:--:--</div>
+                <div class="text-[10px] font-mono text-slate-500 mt-2" id="lastSyncDate">NODES OFFLINE</div>
             </div>
         </div>
 
-        <!-- Oscillation Graph -->
-        <div class="glass p-5 mb-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <i class="fas fa-wave-square text-blue-400"></i> Waveform Analysis
+        <!-- Waveform Analysis -->
+        <div class="glass p-6 mb-8">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                    <i class="fas fa-chart-line text-blue-400"></i> Oscillation Waveform Analysis
                 </h3>
-                <span id="graphLabel" class="text-[9px] font-mono text-blue-500 bg-blue-500/10 px-2 py-1 rounded italic uppercase tracking-tighter">No Data Selected</span>
+                <span id="graphLabel" class="text-[9px] font-mono text-blue-500 bg-blue-500/10 px-3 py-1 rounded border border-blue-500/20 uppercase tracking-tighter">No Active Stream</span>
             </div>
-            <div class="h-64"><canvas id="pressureChart"></canvas></div>
+            <div class="h-72"><canvas id="mainChart"></canvas></div>
         </div>
 
-        <!-- Detailed Log -->
-        <div class="glass overflow-hidden">
+        <!-- Sequence Log -->
+        <div class="glass overflow-hidden shadow-lg">
             <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
-                <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">Device Event Log</h3>
-                <span id="logCounter" class="text-[9px] font-mono text-slate-500">0 Items Cached</span>
+                <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">Event Sequence Log</h3>
+                <span id="logCounter" class="text-[10px] font-mono text-slate-500">0 Items Cached</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse font-mono text-[11px]">
                     <thead>
                         <tr class="text-slate-500 uppercase tracking-tighter border-b border-white/5">
-                            <th class="px-6 py-3">Timestamp</th>
-                            <th class="px-6 py-3 text-center">Pressure</th>
-                            <th class="px-6 py-3 text-center">Turns</th>
-                            <th class="px-6 py-3 text-right">System Origin</th>
+                            <th class="px-8 py-4">Timestamp</th>
+                            <th class="px-8 py-4 text-center">Piezo Reading</th>
+                            <th class="px-8 py-4 text-center">Valve Turns</th>
+                            <th class="px-8 py-4 text-right">Origin</th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody" class="divide-y divide-white/5">
-                        <tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">Please select a device node from the uplink selector...</td></tr>
+                        <tr><td colspan="4" class="px-8 py-12 text-center text-slate-600 italic">Please select a node node to begin telemetry analysis...</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Debugging -->
-        <div class="mt-6 flex flex-wrap gap-4 text-[9px] font-mono text-slate-500 uppercase tracking-widest">
-            <div class="bg-black/40 px-3 py-2 rounded-lg border border-white/5">
-                Active Nodes: <span id="activeNodesDisplay" class="text-blue-400 font-bold">devices, water_system</span>
-            </div>
-            <div class="bg-black/40 px-3 py-2 rounded-lg border border-white/5">
-                Conn Status: <span id="connectionStatus" class="text-emerald-500 font-bold italic">HANDSHAKING...</span>
             </div>
         </div>
     </div>
@@ -267,7 +239,7 @@
 
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
-                apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+                          apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
@@ -276,25 +248,19 @@
             appId: "1:2593146798:web:e964319324a7599fa56a3f"
         };
 
-        // Simultaneous Monitoring Roots
         const MONITOR_PATHS = ["devices", "water_system"];
-
         const isEnvMode = typeof __firebase_config !== 'undefined';
-        const finalConfig = (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") 
-            ? firebaseConfig 
-            : (isEnvMode ? JSON.parse(__firebase_config) : firebaseConfig);
+        const finalConfig = isEnvMode ? JSON.parse(__firebase_config) : firebaseConfig;
         
         const app = initializeApp(finalConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
         const googleProvider = new GoogleAuthProvider();
 
-        // State Management
         let combinedDeviceList = []; 
         let selectedCompositeId = null; 
         let deviceDataBuffers = {}; 
-        let pressureChart = null;
-        let isAuthBusy = false; 
+        let mainChart = null;
         const MAX_HISTORY = 50;
 
         const UI = {
@@ -305,7 +271,6 @@
             googleBtn: document.getElementById('googleBtn'),
             loginError: document.getElementById('loginError'),
             deviceSelector: document.getElementById('deviceSelector'),
-            connStatus: document.getElementById('connectionStatus'),
             graphLabel: document.getElementById('graphLabel'),
             diagPanel: document.getElementById('diagnosticPanel'),
             diagIconBox: document.getElementById('diagIconBox'),
@@ -314,41 +279,35 @@
             diagCase: document.getElementById('diagCase'),
             metrics: {
                 turns: document.getElementById('valveTurns'),
-                pressure: document.getElementById('pressureVal'),
+                piezo: document.getElementById('piezoVal'),
                 syncDate: document.getElementById('lastSyncDate'),
                 syncTime: document.getElementById('lastSyncTime'),
                 turnsGauge: document.getElementById('turnsGauge'),
-                pressureGauge: document.getElementById('pressureGauge')
+                piezoGauge: document.getElementById('piezoGauge')
             },
             tableBody: document.getElementById('logTableBody'),
             logCounter: document.getElementById('logCounter')
         };
 
-        // Initialization & Auth
         const initSession = async () => {
-            if (isAuthBusy) return;
-            isAuthBusy = true;
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
-                    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
-                        await signInAnonymously(auth);
-                    }
+                    await signInAnonymously(auth);
                 }
-            } catch (e) { console.error("Auth Init Failure", e); }
-            finally { isAuthBusy = false; }
+            } catch (e) { console.error("Auth Error", e); }
         };
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 UI.auth.classList.add('hidden');
-                UI.dash.style.display = 'block';
+                UI.dash.classList.remove('hidden');
                 setTimeout(() => UI.dash.style.opacity = '1', 50);
-                startDualMonitoring();
+                startMonitoring();
             } else {
                 UI.dash.style.opacity = '0';
-                setTimeout(() => { UI.dash.style.display = 'none'; UI.auth.classList.remove('hidden'); }, 500);
+                setTimeout(() => { UI.dash.classList.add('hidden'); UI.auth.classList.remove('hidden'); }, 500);
             }
             UI.loading.classList.add('opacity-0');
             setTimeout(() => UI.loading.classList.add('hidden'), 500);
@@ -356,218 +315,133 @@
 
         UI.loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (isAuthBusy) return;
-            isAuthBusy = true;
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            UI.loginError.classList.add('hidden');
             try { await signInWithEmailAndPassword(auth, email, pass); }
-            catch (err) { 
-                UI.loginError.innerText = "Error: " + err.message;
-                UI.loginError.classList.remove('hidden');
-            } finally { isAuthBusy = false; }
+            catch (err) { UI.loginError.innerText = err.message; UI.loginError.classList.remove('hidden'); }
         });
 
-        UI.googleBtn.addEventListener('click', async () => {
-            if (isAuthBusy) return;
-            isAuthBusy = true;
-            UI.loginError.classList.add('hidden');
-            try { await signInWithPopup(auth, googleProvider); }
-            catch (err) { 
-                UI.loginError.innerText = "Login Failed: " + (err.code === 'auth/unauthorized-domain' ? "Domain unauthorized." : err.message);
-                UI.loginError.classList.remove('hidden');
-            } finally { isAuthBusy = false; }
-        });
-
+        UI.googleBtn.addEventListener('click', () => signInWithPopup(auth, googleProvider));
         document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
-        // Simultaneous Multi-Path Monitoring
-        function startDualMonitoring() {
-            if (!auth.currentUser) return;
-
-            const isUsingProvidedConfig = !firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY";
+        function startMonitoring() {
             const appId = typeof __app_id !== 'undefined' ? __app_id.replace(/\./g, '_') : 'default';
 
             MONITOR_PATHS.forEach(pathName => {
-                let finalPath = pathName;
-                if (isUsingProvidedConfig) {
-                    finalPath = `artifacts/${appId}/public/data/${pathName}`;
-                }
+                const dbPath = isEnvMode ? `artifacts/${appId}/public/data/${pathName}` : pathName;
+                const dataRef = ref(db, dbPath);
 
-                const dataRef = ref(db, finalPath);
                 onValue(dataRef, (snapshot) => {
-                    UI.connStatus.innerText = "UPLINK_LIVE";
-                    UI.connStatus.className = "text-emerald-500 font-bold";
-                    
-                    const rootData = snapshot.val();
-                    if (!rootData) return;
+                    const data = snapshot.val();
+                    if (!data) return;
 
-                    const deviceKeys = Object.keys(rootData).filter(key => typeof rootData[key] === 'object');
-                    
-                    deviceKeys.forEach(mac => {
-                        const compositeId = `${pathName}:${mac}`;
-                        const deviceObj = rootData[mac];
-                        
+                    Object.keys(data).forEach(mac => {
+                        const obj = data[mac];
+                        if (typeof obj !== 'object') return;
+
+                        const compId = `${pathName}:${mac}`;
                         const point = {
-                            pressure: Number(deviceObj.current_pressure || deviceObj.pressure) || 0,
-                            turns: Number(deviceObj.current_turns || deviceObj.valveTurns) || 0,
-                            timestamp: deviceObj.last_updated ? new Date(deviceObj.last_updated) : new Date(),
+                            piezo: Number(obj.piezo_value || obj.piezo || obj.vibration || 0),
+                            turns: Number(obj.current_turns || obj.valveTurns || 0),
+                            pressure: Number(obj.current_pressure || obj.pressure || 0), // Kept for diagnostics
+                            timestamp: obj.last_updated ? new Date(obj.last_updated) : new Date(),
                             origin: pathName
                         };
 
-                        if (!deviceDataBuffers[compositeId]) {
-                            deviceDataBuffers[compositeId] = [];
-                            combinedDeviceList.push({
-                                compositeId: compositeId,
-                                mac: mac,
-                                path: pathName,
-                                label: `${pathName.toUpperCase()} / ${mac}`
-                            });
+                        if (!deviceDataBuffers[compId]) {
+                            deviceDataBuffers[compId] = [];
+                            combinedDeviceList.push({ id: compId, label: `${pathName.toUpperCase()} / ${mac}` });
                             updateSelectorUI();
                         }
-                        
-                        const buffer = deviceDataBuffers[compositeId];
-                        const lastPoint = buffer[0];
-                        if (!lastPoint || lastPoint.timestamp.getTime() !== point.timestamp.getTime()) {
-                            buffer.unshift(point);
-                            if (buffer.length > MAX_HISTORY) buffer.pop();
+
+                        const buf = deviceDataBuffers[compId];
+                        if (!buf[0] || buf[0].timestamp.getTime() !== point.timestamp.getTime()) {
+                            buf.unshift(point);
+                            if (buf.length > MAX_HISTORY) buf.pop();
                         }
                     });
 
-                    if (selectedCompositeId && selectedCompositeId.startsWith(pathName + ":")) {
-                        renderActiveDevice();
-                    } else if (!selectedCompositeId && combinedDeviceList.length > 0) {
-                        selectedCompositeId = combinedDeviceList[0].compositeId;
+                    if (selectedCompositeId) renderActive();
+                    else if (combinedDeviceList.length > 0) {
+                        selectedCompositeId = combinedDeviceList[0].id;
                         UI.deviceSelector.value = selectedCompositeId;
-                        renderActiveDevice();
+                        renderActive();
                     }
-                }, (err) => {
-                    console.error(`Error at ${pathName}:`, err);
                 });
             });
         }
 
         function updateSelectorUI() {
-            const currentSelection = UI.deviceSelector.value;
-            combinedDeviceList.sort((a, b) => a.label.localeCompare(b.label));
-            
-            const html = combinedDeviceList.map(dev => 
-                `<option value="${dev.compositeId}">${dev.label}</option>`
-            ).join('');
-            
-            UI.deviceSelector.innerHTML = html;
-            if (currentSelection && combinedDeviceList.some(d => d.compositeId === currentSelection)) {
-                UI.deviceSelector.value = currentSelection;
-            }
+            const current = UI.deviceSelector.value;
+            UI.deviceSelector.innerHTML = combinedDeviceList.map(d => `<option value="${d.id}">${d.label}</option>`).join('');
+            if (current) UI.deviceSelector.value = current;
         }
 
         UI.deviceSelector.addEventListener('change', (e) => {
             selectedCompositeId = e.target.value;
-            renderActiveDevice();
+            renderActive();
         });
 
-        // Diagnostic Intelligence logic - Refined for Real Pipeline Standards
-        function performDiagnostic(pressure, turns) {
-            // REAL PIPELINE THRESHOLDS (Based on Industrial Standard & your 2002 PSI data)
-            const MIN_OPERATING_PRESSURE = 30; // PSI (Anything below is "no flow")
-            const NOMINAL_PRESSURE_MIN = 1000;  // Typical pipeline operating start
-            const CRITICAL_HIGH_PRESSURE = 2600; // Hazard threshold
-            const LEAK_SENSITIVITY = 50; // PSI (Remaining pressure when valve closed)
-
-            // Case 1: Overpressure Hazard
-            if (pressure >= CRITICAL_HIGH_PRESSURE) {
-                return { 
-                    status: "DANGER: CRITICAL OVERPRESSURE", 
-                    caseCode: "HAZARD_REROUTE_REQUIRED", 
-                    color: "rose", 
-                    icon: "fa-radiation" 
-                };
+        function runDiagnostic(piezo, turns, pressure) {
+            // Industrial Piezo Thresholds (0-1024 typical ADC)
+            const PIEZO_MAX = 750;
+            const PIEZO_MIN = 30;
+            
+            if (piezo >= PIEZO_MAX) {
+                return { status: "DANGER: EXCESSIVE VIBRATION", caseCode: "CAVITATION_RISK", color: "rose", icon: "fa-radiation" };
             }
-
-            // Case 2: Leakage (Valve 0 but pressure detected)
-            if (turns === 0 && pressure > LEAK_SENSITIVITY) {
-                return { 
-                    status: "SEAL BREACH: VALVE LEAKAGE DETECTED", 
-                    caseCode: "STATIC_LEAK_ALERT", 
-                    color: "rose", 
-                    icon: "fa-tint-slash" 
-                };
+            if (turns === 0 && piezo > PIEZO_MIN && pressure > 50) {
+                return { status: "ALERT: ACOUSTIC LEAK DETECTED", caseCode: "VALVE_SEAL_BREACH", color: "rose", icon: "fa-tint-slash" };
             }
-
-            // Case 3: Blockage (Valve open but no flow pressure)
-            if (turns !== 0 && pressure < MIN_OPERATING_PRESSURE) {
-                return { 
-                    status: "SUPPLY FAILURE: NO PRESSURE ON OPEN VALVE", 
-                    caseCode: "BLOCKAGE_OR_PUMP_FAILURE", 
-                    color: "amber", 
-                    icon: "fa-exclamation-triangle" 
-                };
+            if (turns !== 0 && piezo < PIEZO_MIN && pressure < 20) {
+                return { status: "WARNING: FLOW INTERRUPTION", caseCode: "SUPPLY_LINE_BLOCKAGE", color: "amber", icon: "fa-exclamation-triangle" };
             }
-
-            // Case 4: Optimal Flow
-            if (turns !== 0 && pressure >= NOMINAL_PRESSURE_MIN) {
-                return { 
-                    status: "OPTIMAL FLOW: PIPELINE NOMINAL", 
-                    caseCode: "ACTIVE_UPLINK_SUCCESS", 
-                    color: "emerald", 
-                    icon: "fa-check-double" 
-                };
+            if (turns !== 0 && piezo >= PIEZO_MIN) {
+                return { status: "SYSTEM NOMINAL: ACTIVE FLOW", caseCode: "NOMINAL_OPERATION", color: "emerald", icon: "fa-check-double" };
             }
-
-            // Case 5: Secured State
-            if (turns === 0 && pressure < MIN_OPERATING_PRESSURE) {
-                return { 
-                    status: "SECURED: VALVE CLOSED & OFFLINE", 
-                    caseCode: "NORMAL_SHUTDOWN_STATE", 
-                    color: "emerald", 
-                    icon: "fa-shield-alt" 
-                };
-            }
-
-            return { status: "Analyzing...", caseCode: "SYSTEM_STABILIZING", color: "blue", icon: "fa-brain" };
+            return { status: "SECURED: IDLE STATE", caseCode: "SYSTEM_READY", color: "emerald", icon: "fa-shield-alt" };
         }
 
-        function renderActiveDevice() {
-            const buffer = deviceDataBuffers[selectedCompositeId] || [];
-            if (buffer.length === 0) return;
-
+        function renderActive() {
+            const buffer = deviceDataBuffers[selectedCompositeId];
+            if (!buffer || buffer.length === 0) return;
             const latest = buffer[0];
-            const deviceInfo = combinedDeviceList.find(d => d.compositeId === selectedCompositeId);
+            const deviceInfo = combinedDeviceList.find(d => d.id === selectedCompositeId);
 
-            UI.metrics.pressure.innerHTML = `${latest.pressure.toFixed(1)} <span class="text-sm font-normal text-slate-500">Piezo sesnor</span>`;
+            // Update Metric Display
+            UI.metrics.piezo.innerHTML = `${latest.piezo.toFixed(0)} <span class="text-sm font-normal text-slate-500 uppercase">Raw Reading</span>`;
             UI.metrics.turns.innerText = latest.turns;
             UI.metrics.syncTime.innerText = latest.timestamp.toLocaleTimeString();
             UI.metrics.syncDate.innerText = latest.timestamp.toLocaleDateString();
 
-            // Updated Gauge scaling for industrial PSI (Max 3000)
-            UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`;
+            // Update Gauges (Piezo scale 0-1024, Turns scale 0-1000)
+            UI.metrics.piezoGauge.style.width = `${Math.min((latest.piezo / 1024) * 100, 100)}%`;
             UI.metrics.turnsGauge.style.width = `${Math.min((Math.abs(latest.turns) / 1000) * 100, 100)}%`;
 
-            // Update Diagnostics UI
-            const diag = performDiagnostic(latest.pressure, latest.turns);
+            // Run Diagnostics
+            const diag = runDiagnostic(latest.piezo, latest.turns, latest.pressure);
             UI.diagStatus.innerText = diag.status;
             UI.diagCase.innerText = diag.caseCode;
             
             const colorMap = {
                 emerald: "text-emerald-400 bg-emerald-500/10 border-l-emerald-500",
                 amber: "text-amber-400 bg-amber-500/10 border-l-amber-500",
-                rose: "text-rose-400 bg-rose-500/10 border-l-rose-500",
-                blue: "text-blue-400 bg-blue-500/10 border-l-blue-500"
+                rose: "text-rose-400 bg-rose-500/10 border-l-rose-500"
             };
-            
             const styles = colorMap[diag.color].split(' ');
-            UI.diagPanel.className = `glass mb-6 border-l-4 overflow-hidden ${styles[styles.length-1]}`;
-            UI.diagIconBox.className = `w-12 h-12 rounded-xl flex items-center justify-center ${styles[1]} ${styles[0]}`;
-            UI.diagIcon.className = `fas ${diag.icon} text-xl`;
-            UI.diagCase.className = `text-xs font-mono ${styles[0]}`;
+            UI.diagPanel.className = `glass mb-8 border-l-4 overflow-hidden shadow-xl ${styles[styles.length-1]}`;
+            UI.diagIconBox.className = `w-14 h-14 rounded-2xl flex items-center justify-center border border-white/5 ${styles[1]} ${styles[0]}`;
+            UI.diagIcon.className = `fas ${diag.icon} text-2xl`;
+            UI.diagCase.className = `text-xs font-mono font-bold ${styles[0]}`;
 
+            // Update Log
             UI.logCounter.innerText = `${buffer.length} PACKETS CACHED`;
             UI.tableBody.innerHTML = buffer.slice(0, 10).map(log => `
-                <tr class="hover:bg-white/[0.02]">
-                    <td class="px-6 py-3 text-slate-400 font-mono">${log.timestamp.toLocaleTimeString()}</td>
-                    <td class="px-6 py-3 text-center text-blue-400 font-bold">${log.pressure.toFixed(0)}</td>
-                    <td class="px-6 py-3 text-center text-amber-500 font-bold">${log.turns}</td>
-                    <td class="px-6 py-3 text-right">
+                <tr class="hover:bg-white/[0.02] transition-colors">
+                    <td class="px-8 py-4 text-slate-400">${log.timestamp.toLocaleTimeString()}</td>
+                    <td class="px-8 py-4 text-center text-blue-400 font-bold">${log.piezo}</td>
+                    <td class="px-8 py-4 text-center text-amber-500 font-bold">${log.turns}</td>
+                    <td class="px-8 py-4 text-right">
                         <span class="text-[8px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase font-bold">${log.origin}</span>
                     </td>
                 </tr>
@@ -578,33 +452,28 @@
         }
 
         function updateChart(buffer) {
-            const ctx = document.getElementById('pressureChart').getContext('2d');
+            const ctx = document.getElementById('mainChart').getContext('2d');
             const sorted = [...buffer].reverse(); 
-            const labels = sorted.map(d => d.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-            const values = sorted.map(d => d.pressure);
+            const labels = sorted.map(d => d.timestamp.toLocaleTimeString([], { hour12: false }));
+            const values = sorted.map(d => d.piezo);
 
-            if (pressureChart) {
-                pressureChart.data.labels = labels;
-                pressureChart.data.datasets[0].data = values;
-                pressureChart.update('none');
+            if (mainChart) {
+                mainChart.data.labels = labels;
+                mainChart.data.datasets[0].data = values;
+                mainChart.update('none');
             } else {
-                const grad = ctx.createLinearGradient(0, 0, 0, 400);
-                grad.addColorStop(0, 'rgba(14, 165, 233, 0.2)');
-                grad.addColorStop(1, 'rgba(14, 165, 233, 0)');
-
-                pressureChart = new Chart(ctx, {
+                mainChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
                             data: values,
                             borderColor: '#0ea5e9',
-                            borderWidth: 3,
-                            backgroundColor: grad,
+                            borderWidth: 2,
+                            backgroundColor: 'rgba(14, 165, 233, 0.05)',
                             fill: true,
                             tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 4
+                            pointRadius: 0
                         }]
                     },
                     options: {
