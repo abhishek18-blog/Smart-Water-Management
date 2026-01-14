@@ -87,6 +87,10 @@
             background-position: right 0.75rem center;
             background-size: 1rem;
         }
+
+        .diagnostic-card {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -152,6 +156,25 @@
                 </button>
             </div>
         </header>
+
+        <!-- System Diagnostic logic display -->
+        <div id="diagnosticPanel" class="glass mb-6 border-l-4 border-l-blue-500 overflow-hidden">
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="diagIconBox" class="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-400">
+                        <i id="diagIcon" class="fas fa-brain text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase font-mono tracking-widest">System Intelligence</h3>
+                        <p id="diagStatus" class="text-lg font-bold text-white leading-tight">Analyzing system state...</p>
+                    </div>
+                </div>
+                <div id="diagCaseBox" class="bg-slate-900/50 px-4 py-2 rounded-lg border border-white/5 min-w-[200px]">
+                    <span class="text-[9px] text-slate-500 uppercase font-mono block mb-1">Detected Scenario</span>
+                    <span id="diagCase" class="text-xs font-mono text-blue-400">WAITING_FOR_DATA</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Selected Device Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -244,19 +267,17 @@
 
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
-            apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
+             apiKey:  "AIzaSyA5iaV9POVbeOxz5KlWaAi2Z_rxgvrflbE",
             authDomain: "project-water-b2dad.firebaseapp.com",
             databaseURL: "https://project-water-b2dad-default-rtdb.asia-southeast1.firebasedatabase.app/",
             projectId: "project-water-b2dad",
             storageBucket: "project-water-b2dad.firebasestorage.app",
             messagingSenderId: "2593146798",
             appId: "1:2593146798:web:e964319324a7599fa56a3f"
-
         };
 
-        // DUAL MONITORING ROOTS
+        // Simultaneous Monitoring Roots
         const MONITOR_PATHS = ["devices", "water_system"];
-        // ------------------------------
 
         const isEnvMode = typeof __firebase_config !== 'undefined';
         const finalConfig = (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") 
@@ -269,12 +290,12 @@
         const googleProvider = new GoogleAuthProvider();
 
         // State Management
-        let combinedDeviceList = []; // Array of objects { id, path, label }
-        let selectedCompositeId = null; // "path:mac"
-        let deviceDataBuffers = {}; // { "path:mac": [ {pressure, turns, timestamp}, ... ] }
+        let combinedDeviceList = []; 
+        let selectedCompositeId = null; 
+        let deviceDataBuffers = {}; 
         let pressureChart = null;
         let isAuthBusy = false; 
-        const MAX_HISTORY = 40;
+        const MAX_HISTORY = 50;
 
         const UI = {
             loading: document.getElementById('loadingOverlay'),
@@ -286,6 +307,11 @@
             deviceSelector: document.getElementById('deviceSelector'),
             connStatus: document.getElementById('connectionStatus'),
             graphLabel: document.getElementById('graphLabel'),
+            diagPanel: document.getElementById('diagnosticPanel'),
+            diagIconBox: document.getElementById('diagIconBox'),
+            diagIcon: document.getElementById('diagIcon'),
+            diagStatus: document.getElementById('diagStatus'),
+            diagCase: document.getElementById('diagCase'),
             metrics: {
                 turns: document.getElementById('valveTurns'),
                 pressure: document.getElementById('pressureVal'),
@@ -298,7 +324,7 @@
             logCounter: document.getElementById('logCounter')
         };
 
-        // Authentication
+        // Initialization & Auth
         const initSession = async () => {
             if (isAuthBusy) return;
             isAuthBusy = true;
@@ -310,11 +336,8 @@
                         await signInAnonymously(auth);
                     }
                 }
-            } catch (e) { 
-                console.error("Auth Init Error", e); 
-            } finally {
-                isAuthBusy = false;
-            }
+            } catch (e) { console.error("Auth Init Failure", e); }
+            finally { isAuthBusy = false; }
         };
 
         onAuthStateChanged(auth, (user) => {
@@ -325,10 +348,7 @@
                 startDualMonitoring();
             } else {
                 UI.dash.style.opacity = '0';
-                setTimeout(() => { 
-                    UI.dash.style.display = 'none'; 
-                    UI.auth.classList.remove('hidden'); 
-                }, 500);
+                setTimeout(() => { UI.dash.style.display = 'none'; UI.auth.classList.remove('hidden'); }, 500);
             }
             UI.loading.classList.add('opacity-0');
             setTimeout(() => UI.loading.classList.add('hidden'), 500);
@@ -341,28 +361,22 @@
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
             UI.loginError.classList.add('hidden');
-            try { 
-                await signInWithEmailAndPassword(auth, email, pass); 
-            } catch (err) { 
+            try { await signInWithEmailAndPassword(auth, email, pass); }
+            catch (err) { 
                 UI.loginError.innerText = "Error: " + err.message;
                 UI.loginError.classList.remove('hidden');
-            } finally {
-                isAuthBusy = false;
-            }
+            } finally { isAuthBusy = false; }
         });
 
         UI.googleBtn.addEventListener('click', async () => {
             if (isAuthBusy) return;
             isAuthBusy = true;
             UI.loginError.classList.add('hidden');
-            try { 
-                await signInWithPopup(auth, googleProvider); 
-            } catch (err) { 
-                UI.loginError.innerText = "Login Failed: " + (err.code === 'auth/unauthorized-domain' ? "Domain not authorized." : err.message);
+            try { await signInWithPopup(auth, googleProvider); }
+            catch (err) { 
+                UI.loginError.innerText = "Login Failed: " + (err.code === 'auth/unauthorized-domain' ? "Domain unauthorized." : err.message);
                 UI.loginError.classList.remove('hidden');
-            } finally {
-                isAuthBusy = false;
-            }
+            } finally { isAuthBusy = false; }
         });
 
         document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
@@ -388,14 +402,12 @@
                     const rootData = snapshot.val();
                     if (!rootData) return;
 
-                    // Filter out keys that aren't device objects
                     const deviceKeys = Object.keys(rootData).filter(key => typeof rootData[key] === 'object');
                     
                     deviceKeys.forEach(mac => {
                         const compositeId = `${pathName}:${mac}`;
                         const deviceObj = rootData[mac];
                         
-                        // Map Data Point
                         const point = {
                             pressure: Number(deviceObj.current_pressure || deviceObj.pressure) || 0,
                             turns: Number(deviceObj.current_turns || deviceObj.valveTurns) || 0,
@@ -403,7 +415,6 @@
                             origin: pathName
                         };
 
-                        // Initialize Buffer if new
                         if (!deviceDataBuffers[compositeId]) {
                             deviceDataBuffers[compositeId] = [];
                             combinedDeviceList.push({
@@ -415,7 +426,6 @@
                             updateSelectorUI();
                         }
                         
-                        // Update Buffer
                         const buffer = deviceDataBuffers[compositeId];
                         const lastPoint = buffer[0];
                         if (!lastPoint || lastPoint.timestamp.getTime() !== point.timestamp.getTime()) {
@@ -424,7 +434,6 @@
                         }
                     });
 
-                    // Trigger render if this path contains our selected device
                     if (selectedCompositeId && selectedCompositeId.startsWith(pathName + ":")) {
                         renderActiveDevice();
                     } else if (!selectedCompositeId && combinedDeviceList.length > 0) {
@@ -440,7 +449,6 @@
 
         function updateSelectorUI() {
             const currentSelection = UI.deviceSelector.value;
-            // Sort by path then MAC
             combinedDeviceList.sort((a, b) => a.label.localeCompare(b.label));
             
             const html = combinedDeviceList.map(dev => 
@@ -458,6 +466,29 @@
             renderActiveDevice();
         });
 
+        // Diagnostic Intelligence logic
+        function performDiagnostic(pressure, turns) {
+            const NO_FLOW_PRESSURE = 10;
+            const HAZARD_PRESSURE = 2500;
+            
+            if (pressure >= HAZARD_PRESSURE) {
+                return { status: "System Overload: Emergency Venting Required", caseCode: "HAZARD_OVERPRESSURE", color: "rose", icon: "fa-radiation" };
+            }
+            if (turns === 0 && pressure > NO_FLOW_PRESSURE) {
+                return { status: "Critical Alert: Valve Leakage Detected", caseCode: "VALVE_SEAL_FAILURE", color: "rose", icon: "fa-tint-slash" };
+            }
+            if (turns !== 0 && pressure <= NO_FLOW_PRESSURE) {
+                return { status: "Flow Warning: Zero Pressure on Active Valve", caseCode: "POTENTIAL_BLOCKAGE", color: "amber", icon: "fa-exclamation-triangle" };
+            }
+            if (turns !== 0 && pressure > NO_FLOW_PRESSURE) {
+                return { status: "Optimal Flow: System Working as Intended", caseCode: "ACTIVE_FLOW_NOMINAL", color: "emerald", icon: "fa-check-double" };
+            }
+            if (turns === 0 && pressure <= NO_FLOW_PRESSURE) {
+                return { status: "Secure State: System Offline and Secured", caseCode: "SECURED_OFFLINE", color: "emerald", icon: "fa-shield-alt" };
+            }
+            return { status: "Analyzing...", caseCode: "INITIALIZING", color: "blue", icon: "fa-brain" };
+        }
+
         function renderActiveDevice() {
             const buffer = deviceDataBuffers[selectedCompositeId] || [];
             if (buffer.length === 0) return;
@@ -472,6 +503,24 @@
 
             UI.metrics.pressureGauge.style.width = `${Math.min((latest.pressure / 3000) * 100, 100)}%`;
             UI.metrics.turnsGauge.style.width = `${Math.min((Math.abs(latest.turns) / 1000) * 100, 100)}%`;
+
+            // Update Diagnostics UI
+            const diag = performDiagnostic(latest.pressure, latest.turns);
+            UI.diagStatus.innerText = diag.status;
+            UI.diagCase.innerText = diag.caseCode;
+            
+            const colorMap = {
+                emerald: "text-emerald-400 bg-emerald-500/10 border-l-emerald-500",
+                amber: "text-amber-400 bg-amber-500/10 border-l-amber-500",
+                rose: "text-rose-400 bg-rose-500/10 border-l-rose-500",
+                blue: "text-blue-400 bg-blue-500/10 border-l-blue-500"
+            };
+            
+            const styles = colorMap[diag.color].split(' ');
+            UI.diagPanel.className = `glass mb-6 border-l-4 overflow-hidden ${styles[styles.length-1]}`;
+            UI.diagIconBox.className = `w-12 h-12 rounded-xl flex items-center justify-center ${styles[1]} ${styles[0]}`;
+            UI.diagIcon.className = `fas ${diag.icon} text-xl`;
+            UI.diagCase.className = `text-xs font-mono ${styles[0]}`;
 
             UI.logCounter.innerText = `${buffer.length} PACKETS CACHED`;
             UI.tableBody.innerHTML = buffer.slice(0, 10).map(log => `
