@@ -12,8 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <script>
         tailwind.config = {
             theme: {
@@ -52,8 +51,6 @@
         }
 
         /* --- UI Components --- */
-
-        /* Tech Card Style */
         .tech-card {
             background: rgba(15, 17, 21, 0.95);
             border: 1px solid var(--tech-border);
@@ -62,87 +59,50 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Corner Accents for "Industrial" look */
         .tech-card::before {
-            content: '';
-            position: absolute;
-            top: -1px; left: -1px;
-            width: 10px; height: 10px;
-            border-top: 2px solid var(--primary);
-            border-left: 2px solid var(--primary);
+            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+            border-top: 2px solid var(--primary); border-left: 2px solid var(--primary);
         }
         .tech-card::after {
-            content: '';
-            position: absolute;
-            bottom: -1px; right: -1px;
-            width: 10px; height: 10px;
-            border-bottom: 2px solid var(--primary);
-            border-right: 2px solid var(--primary);
+            content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
+            border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary);
         }
 
-        /* Neon Text Glow */
-        .neon-text {
-            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-        }
+        .neon-text { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
 
-        /* Inputs */
         .tech-input {
-            background: #000;
-            border: 1px solid #334155;
-            color: var(--primary);
-            font-family: 'JetBrains Mono', monospace;
-            transition: all 0.3s ease;
+            background: #000; border: 1px solid #334155; color: var(--primary);
+            font-family: 'JetBrains Mono', monospace; transition: all 0.3s ease;
         }
         .tech-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-            outline: none;
+            border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); outline: none;
         }
 
-        /* Buttons */
         .tech-btn {
-            background: linear-gradient(45deg, #0ea5e9, #00f2ff);
-            color: #000;
-            font-weight: 800;
-            text-transform: uppercase;
-            border: none;
+            background: linear-gradient(45deg, #0ea5e9, #00f2ff); color: #000; font-weight: 800;
+            text-transform: uppercase; border: none;
             clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
             transition: all 0.2s;
         }
-        .tech-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
-        }
+        .tech-btn:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
 
-        /* Gauge */
         .gauge-container {
-            background: #1e293b;
-            height: 4px;
-            width: 100%;
-            position: relative;
+            background: #1e293b; height: 4px; width: 100%; position: relative;
         }
         .gauge-fill {
-            height: 100%;
-            background: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
+            height: 100%; background: var(--primary); box-shadow: 0 0 10px var(--primary);
             transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* Layout Animations */
-        .fade-enter {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
+        .fade-enter { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .pulse-dot {
-            width: 8px; height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--primary);
-            animation: pulse 2s infinite;
+            width: 8px; height: 8px; background: var(--primary); border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary); animation: pulse 2s infinite;
         }
         @keyframes pulse {
             0% { opacity: 1; box-shadow: 0 0 10px var(--primary); }
@@ -150,18 +110,12 @@
             100% { opacity: 1; box-shadow: 0 0 10px var(--primary); }
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb { background: #334155; }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
         
-        /* Dropdown Styling */
-        select option {
-            background-color: #0f1115;
-            color: #00f2ff;
-            padding: 10px;
-        }
+        select option { background-color: #0f1115; color: #00f2ff; padding: 10px; }
     </style>
 </head>
 <body class="antialiased selection:bg-cyan-500 selection:text-black">
@@ -265,7 +219,6 @@
                 </div>
                 <div class="flex items-end gap-2 mb-4">
                     <div id="pressureVal" class="text-4xl font-mono font-bold text-white leading-none">0000</div>
-                    <!-- <div class="text-sm text-slate-600 font-mono mb-1">/ 3000</div> -->
                 </div>
                 <div class="gauge-container">
                     <div id="pressureGauge" class="gauge-fill" style="width: 0%"></div>
@@ -274,11 +227,12 @@
 
             <div class="tech-card p-6">
                 <div class="flex justify-between items-start mb-4">
-                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Valve State</div>
-                    <i class="fas fa-toggle-on text-amber-400"></i>
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Valve Rotations</div>
+                    <i class="fas fa-arrows-spin text-amber-400"></i>
                 </div>
                 <div class="flex items-center h-[46px] mb-4">
-                    <div id="valveStatus" class="text-2xl font-mono font-bold text-amber-400 uppercase">--</div>
+                    <div id="valveTurns" class="text-4xl font-mono font-bold text-amber-400 uppercase">0</div>
+                    <span class="ml-2 text-xs font-mono text-slate-500 mt-3">TURNS</span>
                 </div>
                 <div class="w-full h-[1px] bg-slate-800 relative">
                     <div class="absolute right-0 top-[-2px] w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
@@ -297,48 +251,39 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="lg:col-span-2 tech-card p-6 min-h-[350px] flex flex-col">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                        <i class="fas fa-chart-line text-tech-cyan"></i> Real-time Telemetry
-                    </h3>
-                    <div class="flex gap-2">
-                        <span class="w-2 h-2 bg-tech-cyan rounded-full animate-pulse"></span>
-                        <span class="text-[10px] font-mono text-cyan-500 uppercase">Live Feed</span>
-                    </div>
-                </div>
-                <div class="flex-1 relative w-full h-full">
-                    <canvas id="pressureChart"></canvas>
-                </div>
+        <div class="w-full tech-card flex flex-col h-[500px]">
+            <div class="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-widest">
+                    <i class="fas fa-list-ul text-tech-cyan mr-2"></i> Extended Event Log
+                </h3>
+                <span class="text-[9px] font-mono text-slate-500 border border-slate-700 px-1">LATEST 50</span>
             </div>
-
-            <div class="tech-card flex flex-col h-[350px]">
-                <div class="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-widest">Event Log</h3>
-                    <span class="text-[9px] font-mono text-slate-500 border border-slate-700 px-1">LATEST 8</span>
-                </div>
-                <div class="overflow-auto flex-1 p-2">
-                    <table class="w-full text-left font-mono text-[10px]">
-                        <tbody id="logTableBody" class="divide-y divide-white/5">
-                            </tbody>
-                    </table>
-                </div>
+            <div class="overflow-auto flex-1 p-2">
+                <table class="w-full text-left font-mono text-[10px] md:text-xs">
+                    <thead class="text-[9px] text-slate-500 uppercase bg-white/5 sticky top-0 backdrop-blur-sm">
+                        <tr>
+                            <th class="p-3">Timestamp</th>
+                            <th class="p-3">Device ID</th>
+                            <th class="p-3 text-right">Pressure (PSI)</th>
+                            <th class="p-3 text-right">Turns</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody" class="divide-y divide-white/5">
+                        </tbody>
+                </table>
             </div>
         </div>
 
         <div class="mt-8 text-center">
-            <p class="text-[9px] text-slate-700 font-mono uppercase">Industrial Control Systems v4.2 // Authorized Personnel Only</p>
+            <p class="text-[9px] text-slate-700 font-mono uppercase">Industrial Control Systems v4.3 // Authorized Personnel Only</p>
         </div>
     </div>
 
     <script>
         let API_URL = ""; 
-        let pressureChart = null;
-        let globalData = [];      // Stores raw data from server
-        let uniqueDevices = [];   // Stores list of discovered IDs
-        let currentDevice = null; // Currently selected ID
+        let globalData = [];      
+        let uniqueDevices = [];   
+        let currentDevice = null; 
 
         function enterDashboard() {
             const inputUrl = document.getElementById('ngrokUrl').value;
@@ -357,21 +302,36 @@
             }, 100);
             
             fetchData();
-            // Refresh every 2 seconds
             setInterval(fetchData, 2000); 
         }
 
         async function fetchData() {
             try {
-                const response = await fetch(`${API_URL}/api/history`);
-                if (!response.ok) throw new Error("Server Offline");
+                const response = await fetch(`${API_URL}/api/history`, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true",
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) throw new Error("Server Offline: " + response.status);
                 
-                // Store the raw data globally
-                globalData = await response.json();
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    globalData = await response.json();
+                } else {
+                    console.error("Received HTML instead of JSON.");
+                    throw new Error("Invalid Data Format");
+                }
                 
                 if(globalData.length > 0) {
                     updateDeviceList(globalData);
                     refreshView();
+                    
+                    const diagText = document.getElementById('diagStatus');
+                    if (diagText.innerText === "CONNECTION FAILURE") {
+                        document.getElementById('diagnosticPanel').style.borderLeftColor = "#00f2ff";
+                    }
                 }
             } catch (error) {
                 console.error("Connection Error:", error);
@@ -382,27 +342,20 @@
             }
         }
 
-        // Extracts unique IDs and populates dropdown
         function updateDeviceList(data) {
-            // Find all unique valve_ids in the history
             const foundDevices = [...new Set(data.map(item => item.valve_id))];
             
-            // If the list of devices has changed, update dropdown
             if (JSON.stringify(foundDevices.sort()) !== JSON.stringify(uniqueDevices.sort())) {
                 uniqueDevices = foundDevices;
                 const select = document.getElementById('deviceSelect');
-                
-                // Save current selection if it exists
                 const savedSelection = select.value;
                 
                 select.innerHTML = uniqueDevices.map(id => 
                     `<option value="${id}">${id}</option>`
                 ).join('');
 
-                // Restore selection or default to first found
                 if (savedSelection && uniqueDevices.includes(savedSelection)) {
                     select.value = savedSelection;
-                    // If selection was preserved, ensure currentDevice variable matches
                     if(currentDevice !== savedSelection) currentDevice = savedSelection;
                 } else if (uniqueDevices.length > 0) {
                     select.value = uniqueDevices[0];
@@ -411,18 +364,14 @@
             }
         }
 
-        // Handle Dropdown Change
         function handleDeviceChange() {
             const select = document.getElementById('deviceSelect');
             currentDevice = select.value;
             refreshView();
         }
 
-        // Filters data for the selected device and updates UI
         function refreshView() {
             if (!currentDevice || globalData.length === 0) return;
-
-            // FILTER: Only get data for the selected device
             const deviceHistory = globalData.filter(d => d.valve_id === currentDevice);
             
             if (deviceHistory.length > 0) {
@@ -433,51 +382,47 @@
         function updateDashboard(historyData) {
             const latest = historyData[0]; 
             
-            // Update Metrics
             document.getElementById('pressureVal').innerText = String(latest.pressure_val).padStart(4, '0');
-            document.getElementById('valveStatus').innerText = latest.valve_status;
+            
+            // UPDATED: Display Valve Turns instead of Status
+            // IMPORTANT: If your API key is different (e.g., 'turns', 'rotations'), change 'valve_turns' below
+            const turns = latest.valve_turns || latest.turns || 0; 
+            document.getElementById('valveTurns').innerText = turns;
+            
             document.getElementById('lastSync').innerText = new Date(latest.created_at).toLocaleTimeString('en-US', {hour12: false});
 
-            // Update Gauge
             const percentage = Math.min((latest.pressure_val / 3000) * 100, 100);
             document.getElementById('pressureGauge').style.width = `${percentage}%`;
 
-            // Diagnostics Logic
-            runDiagnostics(latest.pressure_val, latest.valve_status);
+            runDiagnostics(latest.pressure_val, latest.valve_status); // Kept for overall status coloring
 
-            // Update Logs
-            const tableHtml = historyData.slice(0, 8).map(row => `
+            const tableHtml = historyData.slice(0, 15).map(row => `
                 <tr class="hover:bg-cyan-500/10 transition-colors">
-                    <td class="p-2 text-slate-500">${new Date(row.created_at).toLocaleTimeString('en-US', {hour12: false})}</td>
-                    <td class="p-2 text-white">ID:${row.valve_id}</td>
-                    <td class="p-2 text-right text-tech-cyan">${row.pressure_val}</td>
-                    <td class="p-2 text-right">
-                        <span class="${getStatusBadgeClass(row.valve_status)}">${row.valve_status}</span>
+                    <td class="p-3 text-slate-500">${new Date(row.created_at).toLocaleTimeString('en-US', {hour12: false})}</td>
+                    <td class="p-3 text-white">ID:${row.valve_id}</td>
+                    <td class="p-3 text-right text-tech-cyan">${row.pressure_val}</td>
+                    <td class="p-3 text-right text-amber-400 font-bold">
+                        ${row.valve_turns || row.turns || 0}
                     </td>
                 </tr>
             `).join('');
             document.getElementById('logTableBody').innerHTML = tableHtml;
-
-            updateChart(historyData);
         }
 
         function runDiagnostics(pressure, status) {
             let msg = "SYSTEM NOMINAL";
-            let color = "#00f2ff"; // Cyan
+            let color = "#00f2ff"; 
             let icon = "fa-check-circle";
             
-            if (status.includes("LEAK")) {
+            // Note: I kept the status logic here just for the main diagnostics banner color
+            if (status && status.includes("LEAK")) {
                 msg = "CRITICAL: LEAK DETECTED";
-                color = "#ff2a2a"; // Red
+                color = "#ff2a2a"; 
                 icon = "fa-radiation";
             } else if (pressure > 2500) {
                 msg = "WARNING: HIGH PRESSURE";
-                color = "#fbbf24"; // Amber
+                color = "#fbbf24"; 
                 icon = "fa-exclamation-triangle";
-            } else if (status === "SECURE") {
-                msg = "FLOW SECURED / STANDBY";
-                color = "#34d399"; // Green
-                icon = "fa-shield-alt";
             }
 
             const diagText = document.getElementById('diagStatus');
@@ -486,71 +431,12 @@
 
             diagText.innerText = msg;
             diagText.style.color = color;
-            diagText.style.textShadow = `0 0 10px ${color}55`; // Add glow
+            diagText.style.textShadow = `0 0 10px ${color}55`;
             
             diagPanel.style.borderLeftColor = color;
             iconBox.style.color = color;
             iconBox.style.borderColor = color;
             iconBox.innerHTML = `<i class="fas ${icon}"></i>`;
-        }
-
-        function getStatusBadgeClass(status) {
-            if(status.includes("LEAK")) return "text-red-500 font-bold";
-            if(status === "SECURE") return "text-emerald-400 font-bold";
-            return "text-slate-400";
-        }
-
-        function updateChart(historyData) {
-            const chartData = [...historyData].reverse();
-            const labels = chartData.map(d => new Date(d.created_at).toLocaleTimeString('en-US', {hour12:false}));
-            const values = chartData.map(d => d.pressure_val);
-            const ctx = document.getElementById('pressureChart').getContext('2d');
-            
-            if (pressureChart) {
-                pressureChart.data.labels = labels;
-                pressureChart.data.datasets[0].data = values;
-                pressureChart.update('none'); 
-            } else {
-                // Cyberpunk Chart Styling
-                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, 'rgba(0, 242, 255, 0.2)');
-                gradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
-
-                pressureChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Pressure',
-                            data: values,
-                            borderColor: '#00f2ff',
-                            backgroundColor: gradient,
-                            borderWidth: 2,
-                            pointBackgroundColor: '#000',
-                            pointBorderColor: '#00f2ff',
-                            pointHoverBackgroundColor: '#fff',
-                            fill: true,
-                            tension: 0.3,
-                            pointRadius: 3,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { 
-                                grid: { color: '#1e293b' },
-                                ticks: { display: false }
-                            },
-                            y: { 
-                                grid: { color: 'rgba(255,255,255,0.05)' }, 
-                                ticks: { color: '#64748b', font: {family: 'JetBrains Mono'} } 
-                            }
-                        }
-                    }
-                });
-            }
         }
     </script>
 </body>
