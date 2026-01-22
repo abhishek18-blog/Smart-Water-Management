@@ -4,123 +4,264 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Industrial Valve Monitor | Python Backend</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        :root { --primary: #0ea5e9; --bg-dark: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); }
-        body { background-color: var(--bg-dark); color: #f8fafc; font-family: 'Inter', sans-serif; }
-        .glass { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        .gauge-bar { height: 6px; background: #334155; border-radius: 3px; overflow: hidden; }
-        .gauge-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #38bdf8); width: 0%; transition: width 1s; }
-        
-        /* Flex wrapper to center login */
-        #authSection { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-        
-        /* Removed fixed width dashboard css, moved to tailwind classes below */
-        .dashboard-container { display: none; margin: 0 auto; }
-        
-        /* smooth table scrolling */
+        :root {
+            --primary: #0ea5e9;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Logic */
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Layout Containers */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease-in-out;
+            padding: 1rem;
+        }
+
+        .dashboard-container {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            padding: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Animations */
+        .status-pulse {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .gauge-bar {
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #38bdf8);
+            width: 0%; 
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Typography Override for Data */
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Smooth Table Scroll */
         .table-container { -webkit-overflow-scrolling: touch; }
     </style>
 </head>
 <body class="antialiased selection:bg-blue-500 selection:text-white">
 
-    <div id="authSection">
-        <div class="glass p-6 md:p-8 w-full max-w-md text-center shadow-2xl shadow-blue-900/20">
-            <i class="fas fa-server text-blue-400 text-4xl mb-4"></i>
-            <h1 class="text-2xl font-bold mb-2">System Login</h1>
-            <p class="text-slate-400 text-sm mb-6">Enter API Endpoint URL</p>
+    <div id="authSection" class="auth-container">
+        <div class="glass p-8 w-full max-w-md text-center">
+            <div class="mb-8 text-center">
+                <i class="fas fa-microchip text-blue-400 text-4xl mb-4"></i>
+                <h1 class="text-2xl font-bold">Terminal Login</h1>
+                <p class="text-slate-400 text-sm">Industrial Control Panel Access</p>
+            </div>
             
-            <input type="text" id="ngrokUrl" placeholder="https://xxxx-xxxx.ngrok-free.app" 
-                   class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white mb-4 text-center font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors">
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider ml-1 mb-2 block">API Endpoint URL</label>
+                    <input type="text" id="ngrokUrl" placeholder="https://xxxx-xxxx.ngrok-free.app" 
+                        class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors shadow-inner">
+                </div>
+
+                <button onclick="enterDashboard()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
+                    <i class="fas fa-plug"></i> Connect to Server
+                </button>
+            </div>
+
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-700"></div></div>
+                <div class="relative flex justify-center text-[10px] uppercase"><span class="bg-slate-900 px-2 text-slate-500 font-mono">Secure Uplink</span></div>
+            </div>
             
-            <button onclick="enterDashboard()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/30">
-                Connect to Python Server
-            </button>
+            <p class="text-[10px] text-slate-600 font-mono">
+                Ensure your Python backend is running with:<br>
+                <span class="text-slate-500">ngrok http 5000</span>
+            </p>
         </div>
     </div>
 
-    <div id="dashboardSection" class="dashboard-container w-full max-w-7xl p-4 md:p-6 lg:p-8">
+    <div id="dashboardSection" class="dashboard-container">
         
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div class="flex items-center gap-4">
-                <div class="bg-blue-500/20 p-3 rounded-xl shrink-0"><i class="fas fa-network-wired text-blue-400 text-xl"></i></div>
+                <div class="bg-blue-500/20 p-3 rounded-xl shrink-0">
+                    <i class="fas fa-server text-blue-400 text-xl"></i>
+                </div>
                 <div>
-                    <h2 class="text-lg md:text-xl font-bold">Python Backend Monitor</h2>
-                    <p class="text-emerald-500 text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LIVE CONNECTION ACTIVE
+                    <h2 class="text-xl font-bold">System Monitor</h2>
+                    <p class="text-emerald-500 text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 mt-1">
+                        <span class="status-pulse"></span> Uplink Established
                     </p>
                 </div>
             </div>
-            <button onclick="location.reload()" class="w-full md:w-auto bg-slate-800 p-3 md:p-2 rounded-lg hover:bg-slate-700 hover:text-red-400 transition-colors flex justify-center items-center gap-2 text-sm font-medium">
-                <i class="fas fa-power-off"></i> <span class="md:hidden">Disconnect</span>
-            </button>
+            
+            <div class="flex items-center gap-3">
+                <div class="hidden md:block text-right">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Connected To</div>
+                    <div id="activeUrlDisplay" class="text-[10px] font-mono text-blue-300 max-w-[200px] truncate">--</div>
+                </div>
+                <button onclick="location.reload()" class="h-10 px-4 flex items-center justify-center rounded-lg bg-slate-800 border border-white/10 text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition-all gap-2 text-xs font-bold uppercase">
+                    <i class="fas fa-power-off"></i> <span class="hidden sm:inline">Disconnect</span>
+                </button>
+            </div>
         </header>
 
-        <div id="diagnosticPanel" class="glass mb-6 border-l-4 border-l-blue-500 p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all">
-            <div id="diagIconBox" class="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-400 shrink-0">
-                <i id="diagIcon" class="fas fa-brain text-lg md:text-xl"></i>
-            </div>
-            <div class="w-full">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Status Analysis</h3>
-                <p id="diagStatus" class="text-base md:text-lg font-bold text-white break-words">Waiting for data stream...</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div class="glass p-5 border-t-2 border-t-blue-500 relative overflow-hidden group hover:bg-slate-800/50 transition">
-                <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-tachometer-alt text-4xl"></i></div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase">Pressure</span>
-                <div class="text-2xl md:text-3xl font-mono font-bold mt-2 truncate" id="pressureVal">--</div>
-                <div class="mt-4 gauge-bar"><div id="pressureGauge" class="gauge-fill"></div></div>
-            </div>
-            <div class="glass p-5 border-t-2 border-t-amber-500 relative overflow-hidden group hover:bg-slate-800/50 transition">
-                <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-exclamation-triangle text-4xl"></i></div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase">Valve Status</span>
-                <div class="text-lg md:text-xl font-mono font-bold mt-2 text-amber-400 truncate" id="valveStatus">--</div>
-            </div>
-            <div class="glass p-5 border-t-2 border-t-purple-500 relative overflow-hidden group hover:bg-slate-800/50 transition">
-                <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-clock text-4xl"></i></div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase">Last Packet</span>
-                <div class="text-lg md:text-xl font-mono font-bold mt-2 truncate" id="lastSync">--:--:--</div>
+        <div id="diagnosticPanel" class="glass mb-6 border-l-4 border-l-blue-500 overflow-hidden transition-all">
+            <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <div id="diagIconBox" class="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-400 shrink-0 border border-blue-500/10">
+                    <i id="diagIcon" class="fas fa-brain text-xl"></i>
+                </div>
+                <div class="w-full">
+                    <div class="flex justify-between items-start w-full">
+                        <div>
+                            <h3 class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-widest mb-1">Status Analysis</h3>
+                            <p id="diagStatus" class="text-lg font-bold text-white leading-tight">Waiting for data stream...</p>
+                        </div>
+                        <div class="hidden sm:block bg-slate-900/50 px-3 py-1 rounded border border-white/5">
+                            <span class="text-[9px] text-slate-500 font-mono uppercase">AI DIAGNOSTICS</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="glass p-2 md:p-5 mb-6">
-            <div class="h-48 md:h-64 w-full"><canvas id="pressureChart"></canvas></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+            <div class="glass p-6 border-t-2 border-t-blue-500 hover:bg-slate-800/30 transition-colors">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Pressure Level</span>
+                    <i class="fas fa-tachometer-alt text-blue-400 text-xs"></i>
+                </div>
+                <div class="text-3xl font-mono font-bold text-white truncate" id="pressureVal">--</div>
+                <div class="gauge-bar"><div id="pressureGauge" class="gauge-fill"></div></div>
+            </div>
+
+            <div class="glass p-6 border-t-2 border-t-amber-500 hover:bg-slate-800/30 transition-colors">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Valve State</span>
+                    <i class="fas fa-exclamation-triangle text-amber-400 text-xs"></i>
+                </div>
+                <div class="text-xl font-mono font-bold text-amber-400 truncate" id="valveStatus">--</div>
+                <div class="gauge-bar"><div class="gauge-fill bg-amber-500" style="width: 100%"></div></div>
+            </div>
+
+            <div class="glass p-6 border-t-2 border-t-purple-500 hover:bg-slate-800/30 transition-colors">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Last Packet</span>
+                    <i class="fas fa-clock text-purple-400 text-xs"></i>
+                </div>
+                <div class="text-xl font-mono font-bold text-purple-200 truncate" id="lastSync">--:--:--</div>
+                <div class="text-[10px] text-slate-500 font-mono mt-2">LOCAL SYSTEM TIME</div>
+            </div>
         </div>
 
-        <div class="glass overflow-hidden flex flex-col">
-            <div class="px-6 py-4 border-b border-white/5 bg-slate-800/30">
-                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Recent Logs</h3>
+        <div class="glass p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fas fa-wave-square text-blue-400"></i> Waveform Analysis
+                </h3>
+                <span class="text-[9px] font-mono text-blue-500 bg-blue-500/10 px-2 py-1 rounded italic uppercase">Live Feed</span>
+            </div>
+            <div class="h-64 w-full"><canvas id="pressureChart"></canvas></div>
+        </div>
+
+        <div class="glass overflow-hidden">
+            <div class="px-6 py-4 border-b border-white/5 bg-slate-800/30 flex justify-between items-center">
+                 <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Incoming Logs</h3>
+                 <span class="text-[9px] bg-slate-700 text-slate-300 px-2 py-1 rounded font-mono">LATEST 8</span>
             </div>
             <div class="overflow-x-auto table-container">
                 <table class="w-full text-left font-mono text-[11px] whitespace-nowrap">
                     <thead>
                         <tr class="text-slate-500 uppercase border-b border-white/5 bg-slate-900/20">
-                            <th class="px-6 py-3">Time</th>
-                            <th class="px-6 py-3">Valve ID</th>
-                            <th class="px-6 py-3 text-right">Pressure</th>
-                            <th class="px-6 py-3 text-right">Status</th>
+                            <th class="px-6 py-4">Time</th>
+                            <th class="px-6 py-4">Valve ID</th>
+                            <th class="px-6 py-4 text-right">Pressure</th>
+                            <th class="px-6 py-4 text-right">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="logTableBody"></tbody>
+                    <tbody id="logTableBody" class="divide-y divide-white/5"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
+        // --- LOGIC FROM CODE 1 ---
         let API_URL = ""; 
         let pressureChart = null;
 
         function enterDashboard() {
             const inputUrl = document.getElementById('ngrokUrl').value;
             if(!inputUrl) return alert("Please enter your Ngrok URL");
+            
+            // Clean URL and save
             API_URL = inputUrl.replace(/\/$/, ""); 
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('dashboardSection').style.display = 'block';
+            
+            // Show Active URL in Header
+            document.getElementById('activeUrlDisplay').innerText = API_URL.replace("https://", "");
+
+            // UI Transition using the new CSS classes
+            const auth = document.getElementById('authSection');
+            const dash = document.getElementById('dashboardSection');
+            
+            auth.style.opacity = '0';
+            setTimeout(() => {
+                auth.style.display = 'none';
+                dash.style.display = 'block';
+                // Trigger reflow
+                void dash.offsetWidth; 
+                dash.style.opacity = '1';
+            }, 500);
+            
             fetchData();
             setInterval(fetchData, 2000); 
         }
@@ -133,29 +274,41 @@
                 if(data.length > 0) updateDashboard(data);
             } catch (error) {
                 console.error("Connection Error:", error);
-                document.getElementById('diagStatus').innerText = "CONNECTION LOST - CHECK SERVER";
-                document.getElementById('diagStatus').classList.remove('text-white', 'text-emerald-400', 'text-amber-400', 'text-blue-400');
-                document.getElementById('diagStatus').classList.add('text-red-500');
+                const diagText = document.getElementById('diagStatus');
+                diagText.innerText = "CONNECTION LOST - CHECK SERVER";
+                diagText.classList.remove('text-white', 'text-emerald-400', 'text-amber-400', 'text-blue-400');
+                diagText.classList.add('text-rose-500');
+                
+                // Update Icon to red
+                document.getElementById('diagIconBox').classList.remove('bg-blue-500/10', 'text-blue-400');
+                document.getElementById('diagIconBox').classList.add('bg-rose-500/10', 'text-rose-500');
             }
         }
 
         function updateDashboard(historyData) {
             const latest = historyData[0]; 
+            
+            // Update Text
             document.getElementById('pressureVal').innerText = latest.pressure_val;
             document.getElementById('valveStatus').innerText = latest.valve_status;
             document.getElementById('lastSync').innerText = new Date(latest.created_at).toLocaleTimeString();
 
+            // Update Gauge
             const percentage = Math.min((latest.pressure_val / 3000) * 100, 100);
             document.getElementById('pressureGauge').style.width = `${percentage}%`;
 
+            // Run Diagnostics
             runDiagnostics(latest.pressure_val, latest.valve_status);
 
+            // Update Table (Styled for new CSS)
             const tableHtml = historyData.slice(0, 8).map(row => `
-                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr class="hover:bg-white/[0.02] transition-colors">
                     <td class="px-6 py-3 text-slate-400">${new Date(row.created_at).toLocaleTimeString()}</td>
-                    <td class="px-6 py-3 text-blue-400">${row.valve_id}</td>
-                    <td class="px-6 py-3 text-right font-bold">${row.pressure_val}</td>
-                    <td class="px-6 py-3 text-right ${getStatusColor(row.valve_status)}">${row.valve_status}</td>
+                    <td class="px-6 py-3 text-blue-400 font-bold">${row.valve_id}</td>
+                    <td class="px-6 py-3 text-right font-bold text-slate-200">${row.pressure_val}</td>
+                    <td class="px-6 py-3 text-right">
+                        <span class="${getStatusBadgeClass(row.valve_status)}">${row.valve_status}</span>
+                    </td>
                 </tr>
             `).join('');
             document.getElementById('logTableBody').innerHTML = tableHtml;
@@ -174,6 +327,11 @@
                 pressureChart.data.datasets[0].data = values;
                 pressureChart.update('none'); 
             } else {
+                // Gradient for the chart to match the "Industrial" look
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(14, 165, 233, 0.2)');
+                gradient.addColorStop(1, 'rgba(14, 165, 233, 0)');
+
                 pressureChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -182,13 +340,7 @@
                             label: 'Pressure (PSI)',
                             data: values,
                             borderColor: '#0ea5e9',
-                            backgroundColor: (context) => {
-                                const ctx = context.chart.ctx;
-                                const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-                                gradient.addColorStop(0, "rgba(14, 165, 233, 0.4)");
-                                gradient.addColorStop(1, "rgba(14, 165, 233, 0)");
-                                return gradient;
-                            },
+                            backgroundColor: gradient,
                             borderWidth: 2,
                             fill: true,
                             tension: 0.4,
@@ -202,7 +354,10 @@
                         plugins: { legend: { display: false } },
                         scales: {
                             x: { display: false },
-                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: {size: 10} } }
+                            y: { 
+                                grid: { color: 'rgba(255,255,255,0.05)' }, 
+                                ticks: { color: '#64748b', font: {size: 10, family: 'JetBrains Mono'} } 
+                            }
                         }
                     }
                 });
@@ -211,31 +366,49 @@
 
         function runDiagnostics(pressure, status) {
             let msg = "SYSTEM NOMINAL";
-            let color = "text-emerald-400";
+            let colorClass = "text-emerald-400";
+            let bgClass = "bg-emerald-500/10 border-l-emerald-500";
+            let iconColor = "text-emerald-400";
+            let iconBg = "bg-emerald-500/10";
             
-            // Reset base classes to ensure color switch works smoothly
-            const diagText = document.getElementById('diagStatus');
-            diagText.classList.remove('text-emerald-400', 'text-rose-400', 'text-amber-400', 'text-blue-400', 'text-red-500', 'text-white');
-
             if (status.includes("LEAK")) {
                 msg = "CRITICAL ALERT: LEAK DETECTED";
-                color = "text-rose-400";
+                colorClass = "text-rose-400";
+                bgClass = "bg-rose-500/10 border-l-rose-500";
+                iconColor = "text-rose-400";
+                iconBg = "bg-rose-500/10";
             } else if (pressure > 2500) {
                 msg = "WARNING: HIGH PRESSURE";
-                color = "text-amber-400";
+                colorClass = "text-amber-400";
+                bgClass = "bg-amber-500/10 border-l-amber-500";
+                iconColor = "text-amber-400";
+                iconBg = "bg-amber-500/10";
             } else if (status === "SECURE") {
                 msg = "VALVE SECURED - FLOW STOPPED";
-                color = "text-blue-400";
+                colorClass = "text-blue-400";
+                bgClass = "bg-blue-500/10 border-l-blue-500";
+                iconColor = "text-blue-400";
+                iconBg = "bg-blue-500/10";
             }
 
+            const diagText = document.getElementById('diagStatus');
+            const diagPanel = document.getElementById('diagnosticPanel');
+            const diagIconBox = document.getElementById('diagIconBox');
+
             diagText.innerText = msg;
-            diagText.classList.add(color.split(" ")[0]); 
+            diagText.className = `text-lg font-bold leading-tight ${colorClass}`;
+            
+            // Update Panel Border/BG
+            diagPanel.className = `glass mb-6 border-l-4 overflow-hidden transition-all ${bgClass}`;
+            
+            // Update Icon
+            diagIconBox.className = `w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 transition-all ${iconBg} ${iconColor}`;
         }
 
-        function getStatusColor(status) {
-            if(status.includes("LEAK")) return "text-rose-400 font-bold";
-            if(status === "SECURE") return "text-emerald-400";
-            return "text-slate-400";
+        function getStatusBadgeClass(status) {
+            if(status.includes("LEAK")) return "inline-block px-2 py-1 rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold border border-rose-500/20";
+            if(status === "SECURE") return "inline-block px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20";
+            return "inline-block px-2 py-1 rounded bg-slate-700/50 text-slate-400 text-[10px] font-bold";
         }
     </script>
 </body>
