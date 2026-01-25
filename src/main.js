@@ -389,3 +389,31 @@ function updateComplianceCard(todayLogs) {
     const statusEl = document.getElementById('scheduleStatus');
     statusEl.innerText = statusText; statusEl.className = statusClass;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
