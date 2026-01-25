@@ -103,8 +103,20 @@ let uniqueDevices = [];
 let currentDevice = null; 
 let fetchInterval = null;
 
+
+
+
 function enterDashboard() {
-    const inputUrl = document.getElementById('ngrokUrl').value;
+    const inputField = document.getElementById('ngrokUrl');
+    
+    // Set default if empty
+    if (inputField && !inputField.value) {
+        inputField.value = "https://karon-translucent-arron.ngrok-free.dev/";
+    }
+    
+    // Single declaration to prevent the build error
+    const inputUrl = inputField?.value || "";
+    
     if(!inputUrl) {
         console.warn("No API Endpoint set");
         return; 
@@ -120,6 +132,8 @@ function enterDashboard() {
     const select = document.getElementById('deviceSelect');
     select.addEventListener('change', handleDeviceChange);
 }
+
+
 
 function getCorrectedDateTime(dateString) {
     if (!dateString) return "--/-- --:--";
