@@ -105,16 +105,11 @@ let fetchInterval = null;
 
 function enterDashboard() {
     const inputUrl = document.getElementById('ngrokUrl').value;
-    if (inputField && !inputField.value) {
-        inputField.value = "https://karon-translucent-arron.ngrok-free.dev/";
-    }
-    
-    const inputUrl = inputField.value;
     if(!inputUrl) {
         console.warn("No API Endpoint set");
         return; 
     }
-  
+    
     API_URL = inputUrl.replace(/\/$/, ""); 
     startLiveClock();
     
