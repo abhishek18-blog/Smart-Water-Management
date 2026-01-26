@@ -103,20 +103,8 @@ let uniqueDevices = [];
 let currentDevice = null; 
 let fetchInterval = null;
 
-
-
-
 function enterDashboard() {
-    const inputField = document.getElementById('ngrokUrl');
-    
-    // Set default if empty
-    if (inputField && !inputField.value) {
-        inputField.value = "https://karon-translucent-arron.ngrok-free.dev/";
-    }
-    
-    // Single declaration to prevent the build error
-    const inputUrl = inputField?.value || "";
-    
+    const inputUrl = document.getElementById('ngrokUrl').value;
     if(!inputUrl) {
         console.warn("No API Endpoint set");
         return; 
@@ -132,8 +120,6 @@ function enterDashboard() {
     const select = document.getElementById('deviceSelect');
     select.addEventListener('change', handleDeviceChange);
 }
-
-
 
 function getCorrectedDateTime(dateString) {
     if (!dateString) return "--/-- --:--";
@@ -239,85 +225,164 @@ function refreshView() {
  * UPDATED: updateDashboard
  * Now correctly maps 'valve_status' and 'turns' directly from your DB schema
  */
+// function updateDashboard(historyData) {
+//     const latest = historyData[0]; 
+//     const pressure = latest.pressure_val || 0;
+//     // Handle potential column name variants (valve_turns or turns)
+//     const turns = latest.turns !== undefined ? latest.turns : (latest.valve_turns || 0); 
+    
+//     // 1. Update Pressure Card
+//     const pEl = document.getElementById('pressureVal');
+//     let pText = "LOW";
+//     let pClass = "text-slate-400"; 
+//     if (pressure > 2200) { pText = "HIGH"; pClass = "text-tech-alert"; } 
+//     else if (pressure > 800) { pText = "NORMAL"; pClass = "text-tech-success"; } 
+//     else { pText = "LOW"; pClass = (turns > 0) ? "text-tech-warn" : "text-slate-400"; }
+    
+//     pEl.innerText = pText;
+//     pEl.className = `text-3xl font-mono font-bold leading-none tracking-wider ${pClass}`;
+    
+//     // 2. Update Turns Card
+//     document.getElementById('valveTurns').innerText = turns;
+    
+//     // 3. Update Sync Card
+//     const lastSyncEl = document.getElementById('lastSync');
+//     lastSyncEl.innerText = getCorrectedDateTime(latest.created_at);
+//     lastSyncEl.className = "text-xl font-mono font-bold text-white leading-none"; 
+    
+//     // 4. Update Gauge
+//     const percentage = Math.min((pressure / 3000) * 100, 100);
+//     document.getElementById('pressureGauge').style.width = `${percentage}%`;
+
+//     // 5. Run Logic & Stats
+//     runDiagnostics(pressure, turns, latest.valve_status); 
+//     processDailyStats(historyData);
+
+//     // 6. Generate Real-time Table (Updated to show Status and Turns columns)
+//     const tableHtml = historyData.slice(0, 15).map(row => {
+//         // Color coding logic for the status string
+//         let statusColor = "text-slate-500";
+//         const statusStr = row.valve_status || "Unknown";
+        
+//         if (statusStr.includes("HIGH")) statusColor = "text-red-500";
+//         else if (statusStr.includes("FLOW")) statusColor = "text-tech-success";
+        
+//         const rowTurns = row.turns !== undefined ? row.turns : (row.valve_turns || 0);
+
+//         return `<tr class="hover:bg-cyan-500/10 transition-colors border-b border-white/5">
+//             <td class="p-3 text-slate-500 text-[10px] font-mono">${getCorrectedDateTime(row.created_at)}</td>
+//             <td class="p-3 text-white font-medium">ID:${row.valve_id.slice(-5)}</td>
+//             <td class="p-3 text-right ${statusColor} font-bold uppercase text-[10px]">${statusStr}</td>
+//             <td class="p-3 text-right text-amber-400 font-bold font-mono">
+//                 ${rowTurns} <span class="text-[8px] text-slate-600">TRN</span>
+//             </td>
+//         </tr>`
+//     }).join('');
+    
+//     document.getElementById('logTableBody').innerHTML = tableHtml;
+// }
+
+// function runDiagnostics(pressure, turns, status) {
+//     let msg = "SYSTEM NOMINAL"; let color = "#00f2ff"; let icon = "fa-check-circle";
+//     const diagSub = document.getElementById('diagSubStatus');
+//     if (turns > 0 && pressure < 10) {
+//         msg = "GHOST FLOW DETECTED"; color = "#ff2a2a"; icon = "fa-burst";
+//         diagSub.classList.remove('hidden'); diagSub.innerText = "CRITICAL: Valve Open but Flow is Zero";
+//     } else if (pressure > 2500) {
+//         msg = "WARNING: HIGH PRESSURE"; color = "#fbbf24"; icon = "fa-exclamation-triangle";
+//         diagSub.classList.add('hidden');
+//     } else if (turns > 0 && pressure <= 800) {
+//         msg = "LOW PRESSURE WARNING"; color = "#fbbf24"; icon = "fa-arrow-down";
+//         diagSub.classList.remove('hidden'); diagSub.innerText = "Flow detected but pressure is suboptimal";
+//     } else {
+//         diagSub.classList.add('hidden');
+//     }
+//     const diagText = document.getElementById('diagStatus');
+//     const diagPanel = document.getElementById('diagnosticPanel');
+//     const iconBox = document.getElementById('diagIconBox');
+//     diagText.innerText = msg; diagText.style.color = color; diagText.style.textShadow = `0 0 10px ${color}55`;
+//     diagPanel.style.borderLeftColor = color;
+//     iconBox.style.color = color; iconBox.style.borderColor = color;
+//     iconBox.innerHTML = `<i class="fas ${icon}"></i>`;
+// }
+
+/**
+ * Synchronizes the Piezoelectric Card and the Left Status Card with DB data.
+ */
 function updateDashboard(historyData) {
-    const latest = historyData[0]; 
+    const latest = historyData[0]; // The most recent record from your database
     const pressure = latest.pressure_val || 0;
-    // Handle potential column name variants (valve_turns or turns)
-    const turns = latest.turns !== undefined ? latest.turns : (latest.valve_turns || 0); 
+    const turns = latest.turns ?? latest.valve_turns ?? 0; 
     
-    // 1. Update Pressure Card
+    // 1. UPDATE PIEZOELECTRIC CARD (Fixes the blank "-- --")
     const pEl = document.getElementById('pressureVal');
-    let pText = "LOW";
-    let pClass = "text-slate-400"; 
-    if (pressure > 2200) { pText = "HIGH"; pClass = "text-tech-alert"; } 
-    else if (pressure > 800) { pText = "NORMAL"; pClass = "text-tech-success"; } 
-    else { pText = "LOW"; pClass = (turns > 0) ? "text-tech-warn" : "text-slate-400"; }
-    
-    pEl.innerText = pText;
-    pEl.className = `text-3xl font-mono font-bold leading-none tracking-wider ${pClass}`;
-    
-    // 2. Update Turns Card
+    if (pEl) {
+        // This makes the card show "NORMAL" or "LOW" based on DB pressure
+        pEl.innerText = pressure > 800 ? "NORMAL" : "LOW";
+        pEl.className = `text-3xl font-mono font-bold leading-none tracking-wider ${
+            pressure > 800 ? 'text-tech-success' : 'text-slate-400'
+        }`;
+    }
+
+    // 2. UPDATE REMAINING CARDS
     document.getElementById('valveTurns').innerText = turns;
+    document.getElementById('lastSync').innerText = getCorrectedDateTime(latest.created_at);
     
-    // 3. Update Sync Card
-    const lastSyncEl = document.getElementById('lastSync');
-    lastSyncEl.innerText = getCorrectedDateTime(latest.created_at);
-    lastSyncEl.className = "text-xl font-mono font-bold text-white leading-none"; 
-    
-    // 4. Update Gauge
+    // 3. UPDATE VISUAL GAUGE
     const percentage = Math.min((pressure / 3000) * 100, 100);
     document.getElementById('pressureGauge').style.width = `${percentage}%`;
 
-    // 5. Run Logic & Stats
+    // 4. SYNC LEFT STATUS CARD (Handles Leak Detection)
     runDiagnostics(pressure, turns, latest.valve_status); 
     processDailyStats(historyData);
 
-    // 6. Generate Real-time Table (Updated to show Status and Turns columns)
-    const tableHtml = historyData.slice(0, 15).map(row => {
-        // Color coding logic for the status string
-        let statusColor = "text-slate-500";
+    // 5. REFRESH EVENT LOG TABLE
+    document.getElementById('logTableBody').innerHTML = historyData.slice(0, 15).map(row => {
+        let statusColor = "text-tech-success";
         const statusStr = row.valve_status || "Unknown";
-        
-        if (statusStr.includes("HIGH")) statusColor = "text-red-500";
-        else if (statusStr.includes("FLOW")) statusColor = "text-tech-success";
-        
-        const rowTurns = row.turns !== undefined ? row.turns : (row.valve_turns || 0);
+        // Show red in the table for high flow or leaks
+        if (statusStr.includes("HIGH") || statusStr.includes("LEAK")) statusColor = "text-red-500";
 
-        return `<tr class="hover:bg-cyan-500/10 transition-colors border-b border-white/5">
-            <td class="p-3 text-slate-500 text-[10px] font-mono">${getCorrectedDateTime(row.created_at)}</td>
-            <td class="p-3 text-white font-medium">ID:${row.valve_id.slice(-5)}</td>
-            <td class="p-3 text-right ${statusColor} font-bold uppercase text-[10px]">${statusStr}</td>
-            <td class="p-3 text-right text-amber-400 font-bold font-mono">
-                ${rowTurns} <span class="text-[8px] text-slate-600">TRN</span>
-            </td>
-        </tr>`
+        return `<tr class="hover:bg-cyan-500/10 border-b border-white/5">
+            <td class="p-3 text-slate-500 font-mono">${getCorrectedDateTime(row.created_at)}</td>
+            <td class="p-3 text-white">ID:${row.valve_id.slice(-5)}</td>
+            <td class="p-3 text-right ${statusColor} font-bold uppercase">${statusStr}</td>
+            <td class="p-3 text-right text-amber-400 font-mono">${row.turns ?? 0} TRN</td>
+        </tr>`;
     }).join('');
-    
-    document.getElementById('logTableBody').innerHTML = tableHtml;
 }
 
-function runDiagnostics(pressure, turns, status) {
-    let msg = "SYSTEM NOMINAL"; let color = "#00f2ff"; let icon = "fa-check-circle";
+/**
+ * Updates the Left Status Card. 
+ * Overrides DB text to "LEAK DETECTED" in RED if valve is open but pressure is 0.
+ */
+function runDiagnostics(pressure, turns, dbStatus) {
+    const diagText = document.getElementById('diagStatus');
+    const diagPanel = document.getElementById('diagnosticPanel');
     const diagSub = document.getElementById('diagSubStatus');
+
+    let displayStatus = dbStatus || "IDLE";
+    let color = "#00f2ff"; // Default Cyan
+
+    // --- LEAK DETECTION LOGIC (RED OVERRIDE) ---
     if (turns > 0 && pressure < 10) {
-        msg = "GHOST FLOW DETECTED"; color = "#ff2a2a"; icon = "fa-burst";
-        diagSub.classList.remove('hidden'); diagSub.innerText = "CRITICAL: Valve Open but Flow is Zero";
-    } else if (pressure > 2500) {
-        msg = "WARNING: HIGH PRESSURE"; color = "#fbbf24"; icon = "fa-exclamation-triangle";
-        diagSub.classList.add('hidden');
-    } else if (turns > 0 && pressure <= 800) {
-        msg = "LOW PRESSURE WARNING"; color = "#fbbf24"; icon = "fa-arrow-down";
-        diagSub.classList.remove('hidden'); diagSub.innerText = "Flow detected but pressure is suboptimal";
+        displayStatus = "LEAK DETECTED"; 
+        color = "#ff2a2a"; // Bright Red
+        diagSub.classList.remove('hidden');
+        diagSub.innerText = "CRITICAL: No flow recorded while valve is open";
+    } else if (pressure <= 800 && turns > 0) {
+        color = "#fbbf24"; // Amber for Suboptimal Flow
+        diagSub.classList.remove('hidden');
+        diagSub.innerText = "Pressure is suboptimal based on current turns";
     } else {
         diagSub.classList.add('hidden');
     }
-    const diagText = document.getElementById('diagStatus');
-    const diagPanel = document.getElementById('diagnosticPanel');
-    const iconBox = document.getElementById('diagIconBox');
-    diagText.innerText = msg; diagText.style.color = color; diagText.style.textShadow = `0 0 10px ${color}55`;
+
+    // Apply mappings to the Left Status Card
+    diagText.innerText = displayStatus;
+    diagText.style.color = color;
+    diagText.style.textShadow = `0 0 10px ${color}55`;
     diagPanel.style.borderLeftColor = color;
-    iconBox.style.color = color; iconBox.style.borderColor = color;
-    iconBox.innerHTML = `<i class="fas ${icon}"></i>`;
 }
 
 function processDailyStats(logs) {
